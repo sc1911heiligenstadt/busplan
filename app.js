@@ -581,7 +581,7 @@ function switchSeason(key) {
   renderAll();
 }
 function newSeason() {
-  if (!canEdit()) return;
+  if (!canAdmin()) return;
   const name = (prompt("Name der neuen Saison, z. B. Herbst-2026:") || "").trim();
   if (!name) return;
   if (appData.seasons[name]) { alert("Diese Saison existiert bereits."); return; }
@@ -589,7 +589,7 @@ function newSeason() {
   switchSeason(name);
 }
 function duplicateSeason() {
-  if (!canEdit()) return;
+  if (!canAdmin()) return;
   const name = (prompt("Name der neuen Saison (Mannschaften/Bus-Optionen werden übernommen, Spiele NICHT), z. B. Herbst-2026:") || "").trim();
   if (!name) return;
   if (appData.seasons[name]) { alert("Diese Saison existiert bereits."); return; }
@@ -601,7 +601,7 @@ function duplicateSeason() {
   switchSeason(name);
 }
 function deleteSeason() {
-  if (!canEdit()) return;
+  if (!canAdmin()) return;
   if (Object.keys(appData.seasons).length <= 1) { alert("Die letzte Saison kann nicht gelöscht werden."); return; }
   const key = currentSeasonKey();
   if (!confirm(`Saison „${key}“ mit allen Mannschaften und Spielen wirklich löschen?`)) return;
@@ -615,7 +615,7 @@ function deleteSeason() {
 // ---------- Import (einmaliger Cloud-Seed) ----------
 function handleImportFile(file) {
   if (!file) return;
-  if (!canEdit()) { alert("Nur berechtigte Nutzer können importieren."); return; }
+  if (!canAdmin()) { alert("Importieren ist Administrierenden vorbehalten."); return; }
   const reader = new FileReader();
   reader.onload = async () => {
     let parsed;
@@ -673,10 +673,21 @@ function renderHeaderUser() {
   if (el2) el2.textContent = "Angemeldet als " + name + rolle +
     (canEdit() ? "" : " — Bearbeiten ist bestimmten Nutzern vorbehalten.");
 }
+// Dritte Stufe "Administrieren" (Tools-Übersicht, seit 2026-07-24):
+// Saison-Verwaltung und Daten-Import sind strukturelle Eingriffe und hängen an
+// dieser Stufe, nicht mehr am Bearbeiten-Recht. canAdmin kommt wie canEdit aus
+// me (Administrieren schließt Bearbeiten serverseitig ein — umgekehrt nicht).
+function canAdmin() {
+  if (!currentUser) return false;
+  return currentUser.isAdmin || !!currentUser.canAdmin;
+}
+
 function applyEditVisibility() {
   const editable = canEdit();
+  const admin = canAdmin();
   document.body.classList.toggle("can-edit", editable);
   document.querySelectorAll(".editor-only").forEach((el) => el.classList.toggle("hidden", !editable));
+  document.querySelectorAll(".admin-only").forEach((el) => el.classList.toggle("hidden", !admin));
 }
 
 function renderAll() {

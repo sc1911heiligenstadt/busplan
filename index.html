@@ -40,7 +40,7 @@
       <button data-tab="liste">Liste</button>
       <button data-tab="busregeln">Bus-Regeln</button>
       <div class="nav-right">
-        <button data-tab="einstellungen" class="editor-only hidden">Einstellungen</button>
+        <button data-tab="einstellungen" class="admin-only hidden">Einstellungen</button>
         <button data-tab="info">Info</button>
       </div>
     </nav>
@@ -69,7 +69,7 @@
           <h2>Export</h2>
           <p class="muted" style="margin-bottom:14px;">Gesamtübersicht aller Mannschaften, Spiele und Bus-Status zum Ausdrucken oder Speichern als PDF.</p>
           <div class="btn-row" style="justify-content:flex-start;">
-            <button type="button" class="btn secondary" id="btn-export-pdf">🖨 Als PDF</button>
+            <button type="button" class="btn secondary editor-only hidden" id="btn-export-pdf">🖨 Als PDF</button>
           </div>
         </div>
       </section>
@@ -140,7 +140,7 @@
           <div class="form-grid">
             <div class="form-field"><label>Aktive Saison</label><span id="season-info"></span></div>
           </div>
-          <div class="btn-row editor-only hidden" style="justify-content:flex-start;margin-top:6px;">
+          <div class="btn-row admin-only hidden" style="justify-content:flex-start;margin-top:6px;">
             <button class="btn small" id="btn-season-new">Neue Saison…</button>
             <button class="btn small secondary" id="btn-season-duplicate">Aktuelle duplizieren…</button>
             <button class="btn small danger" id="btn-season-delete">Saison löschen…</button>
@@ -149,7 +149,7 @@
         <div class="card">
           <h2>Daten-Import</h2>
           <p class="muted" style="margin-bottom:14px;">Einmaliger Import des bestehenden Excel-Plans (als JSON-Datei) für die aktuelle Saison — ersetzt vorhandene Mannschaften/Spiele nach Rückfrage.</p>
-          <button class="btn success editor-only hidden" id="btn-import-seed">Datendatei auswählen…</button>
+          <button class="btn success admin-only hidden" id="btn-import-seed">Datendatei auswählen…</button>
           <input type="file" id="import-file-input" accept="application/json" class="hidden" />
         </div>
       </section>
@@ -242,8 +242,8 @@
     </div>
   </div>
 
-  <script src="config.js?v=1.2"></script>
+  <script src="config.js?v=1.3"></script>
   <script src="db.js?v=1.1"></script>
-  <script src="app.js?v=1.3"></script>
+  <script src="app.js?v=1.4"></script>
 </body>
 </html>
