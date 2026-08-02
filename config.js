@@ -38,64 +38,64 @@ const DEFAULT_TEAMS = [
 
 const APP_CHANGELOG = [
   {
-    version: "1.1",
-    groups: [
-      {
-        title: "Bedienung am Handy",
-        items: [
-          "Eingabefelder sind am Handy mindestens 16 Pixel groß. Dadurch zoomt der iPhone-Browser beim Antippen eines Feldes nicht mehr ungefragt in die Seite hinein und bleibt danach verschoben stehen."
-        ]
-      }
-    ]
-  },
-  {
     version: "1.0",
     groups: [
       {
         title: "Busplan",
         items: [
-          "Löst die Excel „Busse Frühjahr 2026“ ab: je Mannschaft eine Liste der Auswärtsspiele mit Status je Transport-Option (Stadtbus, Busunternehmen, vereinseigene Busse, Eltern, Leihwagen).",
-          "Mehrere Saisons planbar (Saison anlegen/duplizieren/löschen), wie von Personalkosten/Vereinsbudget gewohnt.",
-          "Mannschaften und Bus-Optionen sind frei konfigurierbar, da sich das Angebot von Saison zu Saison ändert.",
-          "Mannschafts-Reiter im Tab Busplan lassen sich per Drag-and-Drop neu anordnen (nur Bearbeiter/Admin) — die Reihenfolge gilt danach auch in Übersicht, Liste und PDF-Export."
+          "Transportplanung für die Auswärtsspiele der Nachwuchsmannschaften — an Stelle der bisherigen Excel-Tabelle.",
+          "Je Mannschaft eine Liste der Auswärtsspiele mit Status für jede Transport-Möglichkeit: Stadtbus, Busunternehmen, vereinseigene Busse, Eltern, Leihwagen.",
+          "Status je Spiel und Option: Zusage, Absage, offen, in Klärung oder in Vorbereitung — jeweils mit optionaler Notiz, etwa für eine gemeinsame Fahrt mit einer anderen Mannschaft.",
+          "Mehrere Saisons planbar: anlegen, duplizieren, löschen.",
+          "Mannschaften und Bus-Optionen sind je Saison frei konfigurierbar, weil sich das Angebot halbjährlich ändert.",
+          "Die Mannschafts-Reiter lassen sich per Ziehen neu anordnen. Die Reihenfolge gilt danach überall: in der Übersicht, in der Liste und im PDF."
         ]
       },
       {
-        title: "Konflikt-Prüfung",
+        title: "Konflikte werden erkannt",
         items: [
-          "Nutzen zwei Mannschaften dieselbe Bus-Option am selben Tag, wird das als Konflikt markiert — Warn-Symbol direkt am Status im Busplan-Gitter und gesammelt in einer eigenen Übersichts-Karte.",
-          "Beim Setzen eines Status auf einen bereits belegten Tag/Bus erscheint zusätzlich eine Sicherheitsabfrage (kann trotzdem gespeichert werden, z. B. bei einer bewusst gemeinsamen Fahrt)."
+          "Nutzen zwei Mannschaften dieselbe Bus-Option am selben Tag, markiert die App das als Konflikt — mit Warnsymbol direkt am Status und gesammelt in einer eigenen Karte in der Übersicht.",
+          "Beim Setzen eines Status auf einen bereits belegten Tag kommt zusätzlich eine Rückfrage. Speichern ist trotzdem möglich, etwa wenn zwei Mannschaften bewusst zusammen fahren."
         ]
       },
       {
         title: "Bus-Regeln",
         items: [
-          "Eigener Tab „Bus-Regeln“: zu jeder Bus-Option lässt sich ein Freitext mit Regeln hinterlegen (z. B. Buchungsfrist, maximale Personenzahl, Abfahrtsort), für alle eingeloggten Nutzer einsehbar.",
-          "Ist eine Regel hinterlegt, erscheint ein ℹ️-Hinweis an der jeweiligen Spalte im Busplan-Gitter — der Regeltext steht als Tooltip dahinter.",
-          "Das Regel-Feld ist immer so hoch wie sein Text: längere Regeln stehen vollständig da, ohne Scrollen im Feld, und beim Tippen wächst es mit."
+          "Eigener Reiter „Bus-Regeln“: zu jeder Bus-Option lässt sich ein Freitext hinterlegen — Buchungsfrist, Personenzahl, Abfahrtsort und was sonst zu beachten ist.",
+          "Die Regeln kann jeder angemeldete Nutzer lesen; ändern dürfen sie Bearbeiter.",
+          "Ist eine Regel hinterlegt, erscheint ein Hinweiszeichen an der zugehörigen Spalte im Busplan; der Text steht als Tooltip dahinter.",
+          "Das Eingabefeld wächst mit dem Text mit — auch lange Regeln stehen vollständig da, ohne im Feld zu scrollen."
         ]
       },
       {
-        title: "Bearbeiten (Admin & berechtigte Gruppen)",
+        title: "Wer darf was",
         items: [
-          "Mannschaften, Spiele und Bus-Optionen anlegen, ändern und löschen.",
-          "Status je Spiel und Bus-Option setzen (Zusage/Absage/offen/in Klärung/Unter Vorbereitung) inkl. optionaler Notiz — z. B. für eine gemeinsame Fahrt mit einer anderen Mannschaft.",
-          "Bearbeiten-Recht wird über die Gruppenverwaltung der Tools-Übersicht vergeben (Gruppe braucht \"Bearbeiten\" für Busplan); alle übrigen eingeloggten Nutzer sehen den Plan nur an.",
-          "Saisonverwaltung und Daten-Import (samt Einstellungen-Tab) sind der Stufe „Administrieren“ vorbehalten (Häkchen im Sichtbarkeits-Panel der Tools-Übersicht) — Bearbeiter pflegen Spiele und Status, strukturelle Eingriffe macht die Administration.",
-          "Der PDF-Export der Gesamtübersicht steht nur noch Bearbeitern zur Verfügung — reine Betrachter sehen den Export-Knopf nicht mehr."
+          "Sehen: den kompletten Plan einschließlich Bus-Regeln, schreibgeschützt.",
+          "Bearbeiten: Mannschaften, Spiele und Bus-Optionen anlegen, ändern und löschen, Status setzen, Regeln pflegen. Dazu der PDF-Export.",
+          "Administrieren: zusätzlich Saisonverwaltung und Daten-Import im Reiter „Einstellungen“.",
+          "Der Reiter „Info“ ist für alle sichtbar."
         ]
       },
       {
-        title: "Export",
+        title: "Ausdruck",
         items: [
-          "Button „🖨 Als PDF“ im Tab Übersicht: druckt eine Gesamtübersicht der aktuellen Saison (Kennzahlen, Konflikte sowie je Mannschaft eine Tabelle mit allen Spielen und dem Status je Bus-Option) — zum Ausdrucken oder als PDF speichern."
+          "Der Knopf „Als PDF“ in der Übersicht druckt den Stand der laufenden Saison: Kennzahlen, die Konfliktliste und je Mannschaft eine Tabelle mit allen Spielen und dem Status jeder Bus-Option.",
+          "Die Status-Farben aus dem Bildschirm bleiben im Ausdruck erhalten."
+        ]
+      },
+      {
+        title: "Bedienung am Handy",
+        items: [
+          "Die Ansicht ist für das Handy gebaut und funktioniert dort vollständig.",
+          "Eingabefelder sind mindestens 16 Pixel groß, damit der iPhone-Browser beim Antippen nicht ungefragt in die Seite hineinzoomt und verschoben stehen bleibt.",
+          "Das Umsortieren der Mannschafts-Reiter per Ziehen braucht eine Maus und geht am Handy nicht."
         ]
       },
       {
         title: "Daten & Speicherung",
         items: [
-          "Einmaliger Import des bestehenden Excel-Plans (als JSON) je Saison per Knopfdruck.",
-          "Automatische Nextcloud-Synchronisierung über die zentrale Anmeldung (Tools-Übersicht) — kein separates Passwort nötig; gleichzeitige Änderungen von zwei Geräten werden erkannt und gemeldet."
+          "Gespeichert wird in der Vereins-Nextcloud über die zentrale Anmeldung der Tools-Übersicht — ein eigenes Passwort braucht es nicht.",
+          "Ändern zwei Geräte gleichzeitig denselben Stand, erkennt die App das, lädt den fremden Stand nach und sagt Bescheid."
         ]
       }
     ]
