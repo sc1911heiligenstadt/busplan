@@ -109,3 +109,29 @@ async function fetchMe() {
   if (gatewayMe) { const me = gatewayMe; gatewayMe = null; return me; }
   return gatewayRequest({ action: "me", app: GATEWAY_APP_ID });
 }
+
+// Die Mannschaften des Vereins aus der zentralen Liste (seit 2026-08-12).
+//
+// Der Busplan fuehrt seine Mannschaften weiterhin SELBST -- an ihnen haengen
+// Bus-Optionen, Spiele und Status, und es gibt Fahrten fuer Dinge, die keine
+// Vereinsmannschaft sind (Sonderfahrt, gemeinsame Fahrt mit einem Gastverein).
+// Diese Liste ist deshalb ein VORSCHLAG, keine Schranke: sie fuellt die
+// Auswahl beim Anlegen und den Startbestand einer neuen Saison, aber ein frei
+// getippter Name bleibt jederzeit moeglich.
+//
+// ⚠️ Wirft nicht nach oben durch. Ohne die Liste laeuft der Busplan wie vorher
+// weiter -- sie ist Komfort, keine Voraussetzung.
+async function fetchVereinsMannschaften() {
+  try {
+    const body = await gatewayRequest({ action: "mannschaften-load" });
+    const teams = (body && Array.isArray(body.teams)) ? body.teams : [];
+    // Archivierte sind aufgeloeste Mannschaften -- fuer eine neue Saison soll
+    // sie niemand mehr vorgeschlagen bekommen.
+    return teams
+      .filter((t) => t && t.kurz && !t.archiviert)
+      .map((t) => ({ kurz: String(t.kurz), lang: String(t.lang || t.kurz), liga: String(t.liga || "") }));
+  } catch (e) {
+    console.warn("Vereins-Mannschaftsliste nicht ladbar", e);
+    return [];
+  }
+}

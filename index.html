@@ -191,7 +191,15 @@
       <div class="modal-body">
         <form id="team-form">
           <div class="form-grid">
-            <div class="form-field"><label>Name *</label><input type="text" id="tf-name" placeholder="z. B. A-Jugend" /></div>
+            <!-- datalist: die Mannschaften des Vereins zur Auswahl, aber ein
+                 eigener Name bleibt tippbar. Im Busplan gibt es Fahrten, die zu
+                 keiner Vereinsmannschaft gehören (Sonderfahrt, gemeinsame Fahrt
+                 mit einem Gastverein) — deshalb bewusst kein <select>. -->
+            <div class="form-field">
+              <label>Name *</label>
+              <input type="text" id="tf-name" list="vereins-mannschaften" placeholder="z. B. B1 — oder eigener Name" autocomplete="off" />
+              <datalist id="vereins-mannschaften"></datalist>
+            </div>
             <div class="form-field"><label>Liga</label><input type="text" id="tf-liga" placeholder="z. B. Verbandsliga" /></div>
             <div class="form-field wide"><label>Trainer</label><input type="text" id="tf-trainer" placeholder="optional" /></div>
           </div>
@@ -263,8 +271,8 @@
     </div>
   </div>
 
-  <script src="config.js?v=1.5"></script>
-  <script src="db.js?v=1.1"></script>
-  <script src="app.js?v=1.5"></script>
+  <script src="config.js?v=1.6"></script>
+  <script src="db.js?v=1.2"></script>
+  <script src="app.js?v=1.6"></script>
 </body>
 </html>

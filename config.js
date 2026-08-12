@@ -38,6 +38,21 @@ const DEFAULT_TEAMS = [
 
 const APP_CHANGELOG = [
   {
+    version: "1.5",
+    groups: [
+      {
+        title: "Mannschaften kommen aus der Vereinsliste",
+        items: [
+          "Beim Anlegen einer Mannschaft schlägt das Namensfeld jetzt die echten Mannschaften des Vereins vor — die Liste, die in der Tools-Übersicht unter Einstellungen → Mannschaften gepflegt wird. Wählst du eine aus, wird die Liga gleich mit eingetragen.",
+          "Du kannst weiterhin einen eigenen Namen tippen. Für Sonderfahrten oder eine gemeinsame Fahrt mit einem Gastverein gibt es hier ja keine Vereinsmannschaft.",
+          "Neuer Knopf „↧ Aus Vereinsliste" über den Mannschafts-Reitern: holt die Mannschaften, die es im Verein gibt, hier aber noch nicht. Vorhandene bleiben unangetastet — Spiele, Busse und Status gehen nicht verloren. Der Knopf erscheint nur, wenn wirklich etwas fehlt.",
+          "Eine neue Saison startet ebenfalls mit den Mannschaften aus der Vereinsliste statt mit der alten festen Aufstellung (A-Jugend, B-Jugend …).",
+          "Aufgelöste Mannschaften werden nicht mehr vorgeschlagen."
+        ]
+      }
+    ]
+  },
+  {
     version: "1.0",
     groups: [
       {

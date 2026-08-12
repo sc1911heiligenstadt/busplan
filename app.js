@@ -30,6 +30,11 @@ function fmtDatum(iso) {
 // ---------- State ----------
 let appData = { meta: {}, seasons: {} };
 let currentUser = null;
+// Die Mannschaften des Vereins aus der zentralen Liste (seit 2026-08-12).
+// VORSCHLAG, keine Schranke: sie füllt die Auswahl beim Anlegen und den
+// Startbestand einer neuen Saison. Eigene Namen bleiben frei tippbar — im
+// Busplan gibt es Fahrten, die zu keiner Vereinsmannschaft gehören.
+let vereinsMannschaften = [];
 let currentTab = "uebersicht";
 let currentTeamId = null;
 let editingTeamId = null;
@@ -74,6 +79,22 @@ function normalizeBusOptionen(arr) {
 function seedSeason() {
   const busOptions = clone(DEFAULT_BUSOPTIONEN);
   const ids = busOptions.map((o) => o.id);
+  // ⚠️ Seit 2026-08-12 kommt der Startbestand aus der ZENTRALEN Mannschaftsliste,
+  // wenn sie geladen ist. DEFAULT_TEAMS in config.js ist nur noch der Rückfall
+  // für den Fall, dass die Liste (noch) nicht erreichbar ist -- die Namen dort
+  // ("A-Jugend", "D1-Jugend") sind eine eigene, alte Schreibweise und würden
+  // sonst genau das Durcheinander neu anlegen, das gerade aufgeräumt wurde.
+  if (vereinsMannschaften.length) {
+    return {
+      busOptions,
+      teams: vereinsMannschaften.map((m) => ({
+        id: uuid(), name: m.kurz, liga: m.liga, trainer: "",
+        // Welche Busse für welche Mannschaft in Frage kommen, ist eine
+        // Entscheidung je Saison -- die kann die Vereinsliste nicht kennen.
+        busOptionIds: [], spiele: []
+      }))
+    };
+  }
   const teams = clone(DEFAULT_TEAMS).map((t) => ({
     id: t.id, name: t.name, liga: t.liga, trainer: "",
     busOptionIds: t.busOptionIds.filter((id) => ids.includes(id)),
@@ -688,6 +709,10 @@ function applyEditVisibility() {
   document.body.classList.toggle("can-edit", editable);
   document.querySelectorAll(".editor-only").forEach((el) => el.classList.toggle("hidden", !editable));
   document.querySelectorAll(".admin-only").forEach((el) => el.classList.toggle("hidden", !admin));
+  // ⚠️ NACH der editor-only-Schleife: der Knopf "Aus Vereinsliste" hängt nicht
+  // nur am Recht, sondern auch daran, ob überhaupt etwas zu holen ist. Die
+  // Schleife oben würde ihn sonst wieder einblenden, obwohl er nichts täte.
+  renderVereinsListe();
 }
 
 function renderAll() {
@@ -837,6 +862,61 @@ async function startApp() {
   renderHeaderUser();
   applyEditVisibility();
   renderBusplanGrid();
+  // Kommt nach: die Liste fuellt nur Auswahlfelder, der Busplan ist ohne sie
+  // schon vollstaendig bedienbar. Ein zweiter Roundtrip soll den ersten Aufbau
+  // nicht aufhalten.
+  vereinsMannschaften = await fetchVereinsMannschaften();
+  renderVereinsListe();
+}
+
+// Fuellt die datalist am Namensfeld. ⚠️ Eine datalist SCHLAEGT nichts vor, was
+// nicht drinsteht, verbietet aber auch nichts -- genau das war die Vorgabe:
+// die echten Mannschaften zur Auswahl, eigene Namen weiter frei tippbar.
+function renderVereinsListe() {
+  const dl = document.getElementById("vereins-mannschaften");
+  if (!dl) return;
+  dl.innerHTML = vereinsMannschaften
+    .map((m) => `<option value="${escapeHtml(m.kurz)}">${escapeHtml(m.lang)}${m.liga ? " · " + escapeHtml(m.liga) : ""}</option>`)
+    .join("");
+  const knopf = document.getElementById("btn-teams-uebernehmen");
+  if (knopf) {
+    // Nur anbieten, wenn es wirklich etwas zu holen gibt -- ein Knopf, der
+    // nichts tut, ist schlimmer als keiner.
+    knopf.classList.toggle("hidden", !vereinsMannschaften.length || !canEdit() || !fehlendeVereinsTeams().length);
+  }
+}
+
+// Welche Vereinsmannschaften fehlen in der laufenden Saison? Verglichen wird
+// ueber den KURZNAMEN, klein geschrieben -- der ist flottenweit der Schluessel.
+function fehlendeVereinsTeams() {
+  const season = getSeason();
+  if (!season) return [];
+  const da = new Set(season.teams.map((t) => String(t.name || "").trim().toLowerCase()));
+  return vereinsMannschaften.filter((m) => !da.has(m.kurz.toLowerCase()));
+}
+
+// Fuegt die fehlenden Vereinsmannschaften hinzu. ⚠️ Bestehende werden NICHT
+// angefasst: an ihnen haengen Spiele, Bus-Optionen und Status. Ein Abgleich,
+// der umbenennt oder loescht, wuerde eine halbe Saison Planung mitreissen.
+function teamsAusVereinslisteHolen() {
+  if (!canEdit()) return;
+  const fehlend = fehlendeVereinsTeams();
+  if (!fehlend.length) { alert("Alle Mannschaften der Vereinsliste sind schon angelegt."); return; }
+  if (!confirm(fehlend.length + " Mannschaft(en) aus der Vereinsliste hinzufügen?\n\n"
+      + fehlend.map((m) => "· " + m.kurz).join("\n")
+      + "\n\nVorhandene bleiben unverändert.")) return;
+  const season = getSeason();
+  fehlend.forEach((m) => {
+    season.teams.push({
+      id: uuid(), name: m.kurz, liga: m.liga, trainer: "",
+      // Bus-Optionen sind eine Entscheidung je Mannschaft und Saison -- die
+      // kann die Vereinsliste nicht wissen. Bewusst leer, statt zu raten.
+      busOptionIds: [], spiele: []
+    });
+  });
+  persist();
+  renderAll();
+  renderVereinsListe();
 }
 async function init() {
   setupListeners();
