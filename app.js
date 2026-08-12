@@ -982,6 +982,26 @@ function setupListeners() {
   teamSwitch.addEventListener("dragend", () => {
     teamSwitch.querySelectorAll("button.dragging, button.drag-over").forEach((b) => b.classList.remove("dragging", "drag-over"));
   });
+  // ⚠️ Beide Lauscher mit Null-Prüfung. Ein fehlendes Element liefert null, und
+  // der TypeError aus addEventListener bricht die RESTLICHE Registrierung in
+  // dieser Funktion lautlos mit ab — danach reagiert kein Knopf mehr, ohne dass
+  // man es dem Fehlerbild ansieht. Am 2026-08-12 genau so passiert: eine
+  // parallele Sitzung hatte den Knopf aus index.html entfernt, während der
+  // Lauscher dafür schon in app.js stand.
+  const btnUebernehmen = document.getElementById("btn-teams-uebernehmen");
+  if (btnUebernehmen) btnUebernehmen.addEventListener("click", teamsAusVereinslisteHolen);
+
+  // Name aus der Vereinsliste gewählt -> Liga nachziehen, aber NUR wenn das Feld
+  // leer ist: eine von Hand eingetragene Liga (Staffelwechsel mitten in der
+  // Saison) darf eine Auswahl nicht überschreiben.
+  const tfName = document.getElementById("tf-name");
+  if (tfName) tfName.addEventListener("change", (e) => {
+    const treffer = vereinsMannschaften.find(
+      (m) => m.kurz.toLowerCase() === String(e.target.value || "").trim().toLowerCase());
+    const liga = document.getElementById("tf-liga");
+    if (treffer && liga && !liga.value.trim()) liga.value = treffer.liga;
+  });
+
   document.getElementById("btn-new-team").addEventListener("click", () => openTeamModal(null));
   document.getElementById("btn-edit-team").addEventListener("click", () => { if (currentTeamId) openTeamModal(currentTeamId); });
 
