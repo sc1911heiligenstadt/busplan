@@ -709,10 +709,6 @@ function applyEditVisibility() {
   document.body.classList.toggle("can-edit", editable);
   document.querySelectorAll(".editor-only").forEach((el) => el.classList.toggle("hidden", !editable));
   document.querySelectorAll(".admin-only").forEach((el) => el.classList.toggle("hidden", !admin));
-  // ⚠️ NACH der editor-only-Schleife: der Knopf "Aus Vereinsliste" hängt nicht
-  // nur am Recht, sondern auch daran, ob überhaupt etwas zu holen ist. Die
-  // Schleife oben würde ihn sonst wieder einblenden, obwohl er nichts täte.
-  renderVereinsListe();
 }
 
 function renderAll() {
@@ -878,46 +874,8 @@ function renderVereinsListe() {
   dl.innerHTML = vereinsMannschaften
     .map((m) => `<option value="${escapeHtml(m.kurz)}">${escapeHtml(m.lang)}${m.liga ? " · " + escapeHtml(m.liga) : ""}</option>`)
     .join("");
-  const knopf = document.getElementById("btn-teams-uebernehmen");
-  if (knopf) {
-    // Nur anbieten, wenn es wirklich etwas zu holen gibt -- ein Knopf, der
-    // nichts tut, ist schlimmer als keiner.
-    knopf.classList.toggle("hidden", !vereinsMannschaften.length || !canEdit() || !fehlendeVereinsTeams().length);
-  }
 }
 
-// Welche Vereinsmannschaften fehlen in der laufenden Saison? Verglichen wird
-// ueber den KURZNAMEN, klein geschrieben -- der ist flottenweit der Schluessel.
-function fehlendeVereinsTeams() {
-  const season = getSeason();
-  if (!season) return [];
-  const da = new Set(season.teams.map((t) => String(t.name || "").trim().toLowerCase()));
-  return vereinsMannschaften.filter((m) => !da.has(m.kurz.toLowerCase()));
-}
-
-// Fuegt die fehlenden Vereinsmannschaften hinzu. ⚠️ Bestehende werden NICHT
-// angefasst: an ihnen haengen Spiele, Bus-Optionen und Status. Ein Abgleich,
-// der umbenennt oder loescht, wuerde eine halbe Saison Planung mitreissen.
-function teamsAusVereinslisteHolen() {
-  if (!canEdit()) return;
-  const fehlend = fehlendeVereinsTeams();
-  if (!fehlend.length) { alert("Alle Mannschaften der Vereinsliste sind schon angelegt."); return; }
-  if (!confirm(fehlend.length + " Mannschaft(en) aus der Vereinsliste hinzufügen?\n\n"
-      + fehlend.map((m) => "· " + m.kurz).join("\n")
-      + "\n\nVorhandene bleiben unverändert.")) return;
-  const season = getSeason();
-  fehlend.forEach((m) => {
-    season.teams.push({
-      id: uuid(), name: m.kurz, liga: m.liga, trainer: "",
-      // Bus-Optionen sind eine Entscheidung je Mannschaft und Saison -- die
-      // kann die Vereinsliste nicht wissen. Bewusst leer, statt zu raten.
-      busOptionIds: [], spiele: []
-    });
-  });
-  persist();
-  renderAll();
-  renderVereinsListe();
-}
 async function init() {
   setupListeners();
   if (!getSessionToken()) { showConnectScreen(); return; }
@@ -982,15 +940,12 @@ function setupListeners() {
   teamSwitch.addEventListener("dragend", () => {
     teamSwitch.querySelectorAll("button.dragging, button.drag-over").forEach((b) => b.classList.remove("dragging", "drag-over"));
   });
-  // ⚠️ Beide Lauscher mit Null-Prüfung. Ein fehlendes Element liefert null, und
-  // der TypeError aus addEventListener bricht die RESTLICHE Registrierung in
-  // dieser Funktion lautlos mit ab — danach reagiert kein Knopf mehr, ohne dass
-  // man es dem Fehlerbild ansieht. Am 2026-08-12 genau so passiert: eine
-  // parallele Sitzung hatte den Knopf aus index.html entfernt, während der
-  // Lauscher dafür schon in app.js stand.
-  const btnUebernehmen = document.getElementById("btn-teams-uebernehmen");
-  if (btnUebernehmen) btnUebernehmen.addEventListener("click", teamsAusVereinslisteHolen);
-
+  // ⚠️ Lauscher mit Null-Prüfung. Ein fehlendes Element liefert null, und der
+  // TypeError aus addEventListener bricht die RESTLICHE Registrierung in dieser
+  // Funktion lautlos mit ab — danach reagiert kein Knopf mehr, ohne dass man es
+  // dem Fehlerbild ansieht. Am 2026-08-12 genau so passiert: eine parallele
+  // Sitzung hatte einen Knopf aus index.html entfernt, während der Lauscher
+  // dafür schon in app.js stand.
   // Name aus der Vereinsliste gewählt -> Liga nachziehen, aber NUR wenn das Feld
   // leer ist: eine von Hand eingetragene Liga (Staffelwechsel mitten in der
   // Saison) darf eine Auswahl nicht überschreiben.
