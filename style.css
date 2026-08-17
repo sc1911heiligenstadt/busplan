@@ -304,6 +304,14 @@ body.can-edit .list-row:hover { background: var(--blue-light); }
 .muted { color: var(--muted); font-size: 13px; }
 .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
 
+/* Nachlese zum Erinnerungslauf. Die Warnzeilen sind der eigentliche Zweck der
+   Karte -- eine Mannschaft ohne Trainerkonto bekommt sonst lautlos nichts. */
+#erinnerungen-status { display: flex; flex-direction: column; gap: 8px; line-height: 1.5; }
+#erinnerungen-status .warn-line {
+  background: #fdf3e3; border-left: 3px solid #c9941f; border-radius: 4px;
+  padding: 8px 10px; color: var(--text);
+}
+
 /* ---------- Druckansicht (PDF-Export via window.print) ---------- */
 #print-area { display: none; }
 body.printing-report > *:not(#print-area) { display: none !important; }

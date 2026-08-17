@@ -173,6 +173,55 @@ function renderSummary() {
   document.getElementById("uebersicht-empty").classList.toggle("hidden", season.teams.length > 0);
 }
 
+// ---------- Nachlese zum naechtlichen Erinnerungslauf ----------
+//
+// ⚠️ Ein ausbleibendes Push faellt NIEMANDEM auf. Deshalb steht hier nicht nur
+// "hat funktioniert", sondern vor allem, WER leer ausgegangen waere: eine
+// Mannschaft ohne zugeordnetes Trainerkonto oder ohne hinterlegte Adresse.
+// Ohne diese Zeilen wartet jemand auf eine Nachricht, die es nie geben wird.
+let erinnerungsBericht = null;
+
+function renderErinnerungen() {
+  const el = document.getElementById("erinnerungen-status");
+  if (!el) return;
+
+  if (!erinnerungsBericht) {
+    el.innerHTML = `Der Stand des nächtlichen Laufs ist gerade nicht abrufbar.`;
+    return;
+  }
+  const lauf = erinnerungsBericht.lauf;
+  if (!lauf) {
+    el.innerHTML = `Der nächtliche Lauf hat sich noch nicht gemeldet. Das ist normal, solange
+      keine Fahrt innerhalb der nächsten ${escapeHtml(String(erinnerungsBericht.vorlaufTage || 3))} Tage
+      eine Zusage hat.`;
+    return;
+  }
+
+  const wann = lauf.zuletztAm ? new Date(lauf.zuletztAm).toLocaleString("de-DE") : "unbekannt";
+  const teile = [
+    `<div>Zuletzt gelaufen: <strong>${escapeHtml(wann)}</strong> —
+      ${escapeHtml(String(lauf.fahrten || 0))} Fahrt(en),
+      ${escapeHtml(String(lauf.push || 0))} Handy-Nachricht(en),
+      ${escapeHtml(String(lauf.mails || 0))} E-Mail(s).</div>`
+  ];
+  if (lauf.fehler) {
+    teile.push(`<div class="warn-line">⚠️ Fehler beim letzten Lauf: ${escapeHtml(String(lauf.fehler))}</div>`);
+  }
+  const ohneTrainer = Array.isArray(lauf.ohneTrainer) ? lauf.ohneTrainer : [];
+  if (ohneTrainer.length) {
+    teile.push(`<div class="warn-line">⚠️ Kein Trainerkonto zugeordnet, deshalb ohne Erinnerung:
+      <strong>${escapeHtml(ohneTrainer.join(", "))}</strong>.
+      Die Zuordnung läuft über das Profil des Trainers in der Toolübersicht (Feld Mannschaften),
+      nicht über das Trainer-Feld hier im Busplan.</div>`);
+  }
+  const ohneAdresse = Array.isArray(lauf.ohneAdresse) ? lauf.ohneAdresse : [];
+  if (ohneAdresse.length) {
+    teile.push(`<div class="warn-line">⚠️ Handy-Nachricht ging raus, E-Mail nicht — beim Trainer
+      fehlt eine Adresse in den Trainerdaten: <strong>${escapeHtml(ohneAdresse.join(", "))}</strong>.</div>`);
+  }
+  el.innerHTML = teile.join("");
+}
+
 // ---------- Konflikt-Prüfung ----------
 // Gruppiert alle Spiele der aktuellen Saison nach (Datum, Bus-Option). Eine Gruppe
 // mit >=2 Einträgen ist ein Konflikt — auch innerhalb derselben Mannschaft (zwei
@@ -863,6 +912,10 @@ async function startApp() {
   // nicht aufhalten.
   vereinsMannschaften = await fetchVereinsMannschaften();
   renderVereinsListe();
+  // Ebenfalls nachgelagert und aus demselben Grund: der Bericht ist Nachlese,
+  // keine Voraussetzung fuer die Bedienung.
+  erinnerungsBericht = await fetchBusErinnerungen();
+  renderErinnerungen();
 }
 
 // Fuellt die datalist am Namensfeld. ⚠️ Eine datalist SCHLAEGT nichts vor, was

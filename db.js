@@ -137,3 +137,22 @@ async function fetchVereinsMannschaften() {
     return [];
   }
 }
+
+// Bericht des naechtlichen Erinnerungslaufs (seit 2026-08-17).
+//
+// ⚠️ NUR LESEN. Es gibt bewusst keine Aktion, die den Lauf von Hand ausloest:
+// jede Fahrt kostet eine Mail, und ein zweiter Ausloeser koennte den Merker
+// umgehen, der Doppelversand verhindert.
+//
+// ⚠️ Wirft nicht nach oben durch -- ohne den Bericht laeuft die App wie vorher.
+// Ein aelterer Worker kennt die Aktion nicht und antwortet mit einem Fehler;
+// das darf die Uebersicht nicht kippen.
+async function fetchBusErinnerungen() {
+  try {
+    if (!getSessionToken()) return null;
+    return await gatewayRequest({ action: "busplan-erinnerungen" });
+  } catch (e) {
+    console.warn("Erinnerungs-Bericht nicht ladbar", e);
+    return null;
+  }
+}

@@ -38,6 +38,21 @@ const DEFAULT_TEAMS = [
 
 const APP_CHANGELOG = [
   {
+    version: "1.6",
+    groups: [
+      {
+        title: "Erinnerung an die zugesagte Fahrt",
+        items: [
+          "Drei Tage bevor eine Mannschaft ihren Bus hat, bekommen ihre Trainer automatisch eine Nachricht aufs Handy und eine E-Mail. Ausgelöst wird das nur von einer Zusage — bei offen, in Klärung oder in Vorbereitung passiert nichts.",
+          "In der E-Mail stehen Tag, Ort und der zugesagte Bus, dazu die Bus-Regeln genau dieses Busses. Sind für ein Spiel zwei Busse zugesagt, nennt eine einzige Nachricht beide samt ihrer Regeln.",
+          "Kommt eine Zusage erst kurz vorher, geht die Erinnerung trotzdem raus — in der Nacht danach. Doppelt kommt sie nie.",
+          "Wer die Nachrichten aufs Handy nicht will, schaltet sie in der Tools-Übersicht unter „Mein Konto“ ab. Die E-Mail bleibt davon unberührt.",
+          "Neu in der Übersicht: die Karte „Bus-Erinnerungen“ zeigt, wann der Versand zuletzt lief und wie viele Nachrichten rausgingen — und vor allem, für welche Mannschaft niemand erreichbar war."
+        ]
+      }
+    ]
+  },
+  {
     version: "1.5",
     groups: [
       {
