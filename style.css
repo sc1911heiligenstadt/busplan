@@ -353,3 +353,62 @@ nav .nav-right { margin-left: auto; display: flex; gap: inherit; }
 @media (max-width: 820px) {
   input, select, textarea { font-size: 16px !important; }
 }
+/* ---------- Busabfrage: ist an dem Tag ein Bus frei? ---------- */
+/* Das Datumsfeld hat eine intrinsische Mindestbreite, die sich nicht kuerzen
+   laesst -- ohne max-width sprengt es am Handy die Karte (die .filter-bar
+   bricht dafuer ohnehin um). */
+.filter-bar input[type="date"] {
+  padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+  font-size: 14px; background: var(--white); font-family: inherit; max-width: 100%;
+}
+.ba-tag { font-weight: 700; color: var(--blue); margin-bottom: 10px; }
+.ba-zeile {
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 14px; margin-bottom: 8px; background: var(--white);
+}
+.ba-zeile.ist-frei { border-left: 4px solid var(--green); background: #f4fbf6; }
+.ba-zeile.ist-belegt { border-left: 4px solid var(--red); background: var(--red-light); }
+.ba-kopf { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.ba-icon { font-size: 16px; }
+/* min-width:0 laesst einen langen Busnamen umbrechen, statt die Zeile
+   aufzuziehen und die Seite seitlich ueberlaufen zu lassen. */
+.ba-name { font-weight: 700; font-size: 15px; flex: 1 1 auto; min-width: 0; }
+.ba-kopf .btn { margin-left: auto; }
+.ba-grund { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; font-size: 14px; }
+.ba-frei-text { color: var(--green); font-weight: 600; }
+.ba-belegt-text { color: var(--text); }
+.ba-offen { margin-top: 6px; font-size: 13px; color: var(--gold); font-weight: 600; }
+.ba-regeln { margin-top: 6px; font-size: 13px; color: var(--muted); line-height: 1.45; }
+.ba-status { margin-top: 12px; font-size: 13px; color: var(--muted); min-height: 18px; }
+.ba-status.is-ok { color: var(--green); font-weight: 600; }
+
+/* Anfragen-Liste */
+.anfrage-row {
+  border: 1px solid var(--border); border-left: 4px solid var(--gold);
+  border-radius: 8px; padding: 10px 14px; margin-bottom: 8px;
+  background: var(--gold-light); font-size: 14px;
+}
+.anfrage-row.st-zugesagt { border-left-color: var(--green); background: #f4fbf6; }
+.anfrage-row.st-abgelehnt { border-left-color: var(--red); background: var(--red-light); }
+.ar-kopf { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.ar-status { font-weight: 700; }
+.ar-bus { color: var(--blue); font-weight: 600; }
+.ar-body { margin-top: 4px; overflow-wrap: anywhere; }
+.ar-meta { margin-top: 4px; font-size: 12px; color: var(--muted); }
+.ar-antwort { margin-top: 6px; font-size: 13px; overflow-wrap: anywhere; }
+.anfrage-row .btn-row { margin-top: 8px; }
+
+/* Haekchen im Bus-Regeln-Editor. Bewusst NICHT in .form-field: dort greift
+   input { width: 100% } und macht aus dem Kaestchen einen Balken. */
+.bo-abfragbar {
+  display: flex; align-items: flex-start; gap: 8px;
+  margin-top: 6px; font-size: 13px; color: var(--muted); line-height: 1.4; cursor: pointer;
+}
+.bo-abfragbar input { width: 16px; height: 16px; flex: 0 0 auto; margin-top: 2px; }
+
+/* Gemessen am 2026-08-19 (375 px): ein 51 Zeichen langer Mannschaftsname zog
+   die Karte auf 357 px und die GANZE Seite um 32 px seitlich auf -- die Spans
+   der Zeile hatten weder eine Umbruchregel noch min-width:0, und die Zeile
+   steht in keinem Scroll-Container (anders als die Tabelle daneben).
+   Betrifft die Anfragen-Karte und die gleich gebaute Konflikte-Karte. */
+.konflikt-row > span { min-width: 0; overflow-wrap: anywhere; }

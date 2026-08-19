@@ -156,3 +156,46 @@ async function fetchBusErinnerungen() {
     return null;
   }
 }
+
+// Bus-Anfragen: "ist an dem Tag noch ein Bus frei, und kann ich ihn haben?"
+// (seit 2026-08-19).
+//
+// ⚠️ Eigene schmale Worker-Aktionen statt dav-save. busplan steht in
+// WRITE_REQUIRES_EDIT_PERMISSION -- eine Anfrage STELLEN soll aber jeder duerfen,
+// der den Plan sehen darf, sonst fragt die Geschaeftsstelle bei sich selbst an.
+// Gleiche Bauform wie vereinskalender-vote. Die Anfragen liegen deshalb auch in
+// einer eigenen Datei neben busplan.json, nicht darin.
+//
+// Jede der drei schreibenden Funktionen liefert die VOLLE Liste zurueck -- der
+// Client braucht keine eigene Konfliktbehandlung, der Worker liest frisch und
+// wiederholt bei Bedarf selbst.
+
+// ⚠️ Wirft nicht nach oben durch: ein aelterer Worker kennt die Aktion nicht,
+// und das darf den Busplan nicht kippen. null heisst "nicht abrufbar" und wird
+// im Tab anders angezeigt als eine leere Liste.
+async function fetchBusAnfragen() {
+  try {
+    if (!getSessionToken()) return null;
+    const body = await gatewayRequest({ action: "busplan-anfragen-load" });
+    return Array.isArray(body.anfragen) ? body.anfragen : [];
+  } catch (e) {
+    console.warn("Bus-Anfragen nicht ladbar", e);
+    return null;
+  }
+}
+
+// ⚠️ Die drei folgenden werfen ABSICHTLICH durch. Wer eine Anfrage abschickt,
+// muss erfahren, wenn sie nicht angekommen ist -- ein stiller Fehlschlag waere
+// hier schlimmer als eine Fehlermeldung.
+async function sendeBusAnfrage(daten) {
+  const body = await gatewayRequest(Object.assign({ action: "busplan-anfrage-neu" }, daten));
+  return body;
+}
+
+async function entscheideBusAnfrage(id, status, antwort) {
+  return gatewayRequest({ action: "busplan-anfrage-entscheiden", id, status, antwort });
+}
+
+async function loescheBusAnfrage(id) {
+  return gatewayRequest({ action: "busplan-anfrage-loeschen", id });
+}

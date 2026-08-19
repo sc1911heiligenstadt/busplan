@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>🚌 Busplan</title>
 <meta name="theme-color" content="#1a56a0" />
-<link rel="stylesheet" href="style.css?v=1.5" />
+<link rel="stylesheet" href="style.css?v=1.6" />
 </head>
 <body>
 
@@ -38,6 +38,7 @@
       <button data-tab="uebersicht" class="active">Übersicht</button>
       <button data-tab="busplan">Busplan</button>
       <button data-tab="liste">Liste</button>
+      <button data-tab="busabfrage">Bus frei?</button>
       <button data-tab="busregeln">Bus-Regeln</button>
       <div class="nav-right">
         <button data-tab="einstellungen" class="admin-only hidden">Einstellungen</button>
@@ -54,6 +55,11 @@
           <h2>⚠️ Konflikte</h2>
           <p class="muted" style="margin-bottom:14px;">Diese Bus-Option ist am selben Tag von mehr als einem Spiel eingetragen — bitte klären, wer den Bus tatsächlich bekommt.</p>
           <div id="konflikte-list"></div>
+        </div>
+        <div class="card hidden" id="anfragen-card">
+          <h2>🚌 Offene Bus-Anfragen</h2>
+          <p class="muted" style="margin-bottom:14px;">Für diese Tage hat jemand einen Bus angefragt und wartet auf eine Antwort. Ein Klick führt zum Reiter „Bus frei?“.</p>
+          <div id="anfragen-card-list"></div>
         </div>
         <div class="card">
           <h2>Nach Mannschaft</h2>
@@ -115,6 +121,26 @@
           </div>
           <div class="list-rows" id="liste-rows"></div>
           <div class="empty-state hidden" id="liste-empty">Keine Spiele gefunden.</div>
+        </div>
+      </section>
+
+      <!-- ---------- Busabfrage ---------- -->
+      <section class="tab-section" id="tab-busabfrage">
+        <div class="card">
+          <h2>Ist an dem Tag ein Bus frei?</h2>
+          <p class="muted" style="margin-bottom:14px;">Trag einen Tag ein — dann steht unten, welcher Bus an dem Tag noch frei ist und welcher schon vergeben. Gerechnet wird aus den Spielen der laufenden Saison: Zusage, offen, in Klärung und Unter Vorbereitung belegen einen Bus, eine Absage nicht.</p>
+          <div class="filter-bar">
+            <input type="date" id="ba-datum" />
+            <button type="button" class="btn small secondary" id="btn-ba-heute">Heute</button>
+            <button type="button" class="btn small secondary" id="btn-ba-morgen">Morgen</button>
+          </div>
+          <div id="ba-ergebnis"></div>
+          <div id="ba-status" class="ba-status"></div>
+        </div>
+        <div class="card">
+          <h2>Bus-Anfragen</h2>
+          <p class="muted" style="margin-bottom:14px;">Anfragen darf jeder, der den Busplan sehen kann. Zusagen und Ablehnen dürfen Bearbeiter. Eine zugesagte Anfrage belegt den Bus an dem Tag mit.</p>
+          <div id="ba-anfragen"></div>
         </div>
       </section>
 
@@ -189,6 +215,66 @@
 
   <!-- ---------- Druckbereich (nur für PDF-Export sichtbar) ---------- -->
   <div id="print-area"><div id="print-content"></div></div>
+
+  <!-- ---------- Bus anfragen ---------- -->
+  <div class="modal-overlay hidden" id="anfrage-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Bus anfragen</h2>
+        <button class="modal-close" id="anfrage-modal-close" aria-label="Schließen">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="muted" id="anfrage-modal-context" style="margin-bottom:14px;"></p>
+        <form id="anfrage-form">
+          <div class="form-field wide">
+            <label>Mannschaft oder Anlass *</label>
+            <input type="text" id="af-team" list="anfrage-mannschaften" placeholder="z. B. D1 — oder Sonderfahrt" autocomplete="off" />
+            <datalist id="anfrage-mannschaften"></datalist>
+          </div>
+          <div class="form-field wide"><label>Wofür wird der Bus gebraucht?</label><input type="text" id="af-zweck" placeholder="optional, z. B. Turnier in Mühlhausen, Abfahrt 8 Uhr" /></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <div></div>
+        <div class="btn-row">
+          <button class="btn secondary" id="btn-cancel-anfrage">Abbrechen</button>
+          <button class="btn success" id="btn-save-anfrage">Anfrage abschicken</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------- Anfrage entscheiden ---------- -->
+  <div class="modal-overlay hidden" id="entscheid-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Anfrage entscheiden</h2>
+        <button class="modal-close" id="entscheid-modal-close" aria-label="Schließen">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="muted" id="entscheid-modal-context" style="margin-bottom:14px;"></p>
+        <form id="entscheid-form">
+          <div class="form-grid">
+            <div class="form-field"><label>Antwort</label>
+              <select id="ef-status">
+                <option value="offen">noch offen</option>
+                <option value="zugesagt">zusagen</option>
+                <option value="abgelehnt">ablehnen</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-field wide"><label>Kurze Nachricht dazu</label><input type="text" id="ef-antwort" placeholder="optional, z. B. Abfahrt 7:30 ab Sportplatz" /></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <div></div>
+        <div class="btn-row">
+          <button class="btn secondary" id="btn-cancel-entscheid">Abbrechen</button>
+          <button class="btn success" id="btn-save-entscheid">Speichern</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- ---------- Mannschaft-Formular ---------- -->
   <div class="modal-overlay hidden" id="team-modal">
@@ -280,8 +366,8 @@
     </div>
   </div>
 
-  <script src="config.js?v=1.8"></script>
-  <script src="db.js?v=1.4"></script>
-  <script src="app.js?v=1.8"></script>
+  <script src="config.js?v=1.9"></script>
+  <script src="db.js?v=1.5"></script>
+  <script src="app.js?v=1.9"></script>
 </body>
 </html>

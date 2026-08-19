@@ -15,14 +15,19 @@ const STATUS_WERTE = [
 
 // Startbestand an Bus-Optionen — keine Personendaten. Echte Trainer/Spieltermine
 // kommen ausschließlich per einmaligem Cloud-Import in die Nextcloud, nie ins Repo.
+// `abfragbar` steuert die Busabfrage im Tab „Bus frei?“: nur ein Eintrag mit
+// Häkchen wird als frei oder belegt geführt und kann angefragt werden. Gedacht
+// ist das für echte einzelne Fahrzeuge — „Eltern / Privatfahrer“ ist keines und
+// kann an einem Tag nicht „belegt“ sein, steht deshalb hier auf false.
+// Fehlt das Feld an einem bestehenden Eintrag, gilt er als abfragbar.
 const DEFAULT_BUSOPTIONEN = [
-  { id: "stadtbus", name: "Stadtbus", regeln: "" },
-  { id: "villa-lampe", name: "Villa Lampe", regeln: "" },
-  { id: "laerz-weiss", name: "Lärz & Weiß", regeln: "" },
-  { id: "sch-bus-hig", name: "SCH-Bus HIG SC911", regeln: "" },
-  { id: "sch-bus-eic", name: "SCH-Bus EIC SC911", regeln: "" },
-  { id: "eltern", name: "Eltern / Privatfahrer", regeln: "" },
-  { id: "vw-autohaus", name: "VW Autohaus (Leihwagen)", regeln: "" }
+  { id: "stadtbus", name: "Stadtbus", regeln: "", abfragbar: true },
+  { id: "villa-lampe", name: "Villa Lampe", regeln: "", abfragbar: true },
+  { id: "laerz-weiss", name: "Lärz & Weiß", regeln: "", abfragbar: true },
+  { id: "sch-bus-hig", name: "SCH-Bus HIG SC911", regeln: "", abfragbar: true },
+  { id: "sch-bus-eic", name: "SCH-Bus EIC SC911", regeln: "", abfragbar: true },
+  { id: "eltern", name: "Eltern / Privatfahrer", regeln: "", abfragbar: false },
+  { id: "vw-autohaus", name: "VW Autohaus (Leihwagen)", regeln: "", abfragbar: true }
 ];
 
 // Startbestand an Mannschaften (Name/Liga sind keine Personendaten). Trainer und
@@ -37,6 +42,38 @@ const DEFAULT_TEAMS = [
 ];
 
 const APP_CHANGELOG = [
+  {
+    version: "1.7",
+    groups: [
+      {
+        title: "Ist an dem Tag noch ein Bus frei?",
+        items: [
+          "Neuer Reiter „Bus frei?“: Datum eintragen, und die App sagt für jeden Bus, ob er an dem Tag noch frei ist oder schon vergeben — samt der Mannschaft, die ihn hat, und dem Grund (Zusage, offen, in Klärung, in Vorbereitung).",
+          "Mitgezählt werden alle Mannschaften der laufenden Saison. Eine Absage oder ein leeres Feld belegt nichts.",
+          "Sind Regeln zu einem Bus hinterlegt, stehen sie gleich mit dabei — die Buchungsfrist sieht man also, bevor man anfragt.",
+          "Die Knöpfe „Heute“ und „Morgen“ springen mit einem Griff auf den passenden Tag."
+        ]
+      },
+      {
+        title: "Welche Busse abgefragt werden",
+        items: [
+          "Im Reiter „Bus-Regeln“ hat jeder Bus jetzt ein Häkchen „In der Busabfrage führen“. Nur angehakte Busse tauchen in der Abfrage auf und können angefragt werden.",
+          "Gedacht ist das für echte einzelne Fahrzeuge. „Eltern / Privatfahrer“ zum Beispiel ist kein einzelner Bus und kann an einem Tag nicht belegt sein — das Häkchen ist dort ab Werk aus.",
+          "Setzen und wegnehmen dürfen das Häkchen nur Bearbeiter."
+        ]
+      },
+      {
+        title: "Einen Bus für einen Tag anfragen",
+        items: [
+          "Unter der Abfrage steht bei jedem freien Bus ein Knopf „Anfragen“. Mannschaft oder Anlass eintragen, kurz sagen wofür — fertig.",
+          "Anfragen darf jeder, der den Busplan sehen kann. Man braucht dafür kein Bearbeiten-Recht.",
+          "Alle Anfragen stehen als Liste im selben Reiter. Bearbeiter sagen dort zu oder ab und können eine kurze Antwort dazuschreiben.",
+          "Eine zugesagte Anfrage belegt den Bus an dem Tag sofort mit — die nächste Abfrage zeigt ihn also nicht mehr als frei.",
+          "Die eigene Anfrage lässt sich zurücknehmen, solange niemand entschieden hat. Offene Anfragen stehen zusätzlich als Karte in der Übersicht."
+        ]
+      }
+    ]
+  },
   {
     version: "1.6",
     groups: [

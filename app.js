@@ -74,7 +74,11 @@ function normalizeTeam(t, validOptionIds) {
 }
 function normalizeBusOptionen(arr) {
   if (!Array.isArray(arr)) return [];
-  return arr.filter((o) => o && typeof o === "object" && o.id && o.name).map((o) => ({ id: String(o.id), name: String(o.name), regeln: typeof o.regeln === "string" ? o.regeln : "" }));
+  // abfragbar (seit 2026-08-19): steuert, ob die Bus-Option in der Busabfrage
+  // als frei/belegt gefuehrt und angefragt werden kann. Ein FEHLENDES Feld gilt
+  // als abfragbar -- bestehende Optionen sollen nach dem Update nicht alle aus
+  // der Abfrage fallen. Gleiche Vorgabe im Worker (busplanOptionPruefen).
+  return arr.filter((o) => o && typeof o === "object" && o.id && o.name).map((o) => ({ id: String(o.id), name: String(o.name), regeln: typeof o.regeln === "string" ? o.regeln : "", abfragbar: o.abfragbar !== false }));
 }
 function seedSeason() {
   const busOptions = clone(DEFAULT_BUSOPTIONEN);
@@ -630,8 +634,337 @@ function renderBusOptionen() {
         ${editable ? `<button class="icon-btn" data-remove-option="${i}" title="Entfernen">×</button>` : ""}
       </div>
       <textarea class="pg-regeln" data-regeln-idx="${i}" rows="2" placeholder="Regeln für diesen Bus, z. B. Buchungsfrist, max. Personenzahl, Abfahrtsort …" ${editable ? "" : "disabled"}>${escapeHtml(o.regeln)}</textarea>
+      <label class="bo-abfragbar"><input type="checkbox" class="pg-abfragbar" data-abfragbar-idx="${i}" ${o.abfragbar !== false ? "checked" : ""} ${editable ? "" : "disabled"} /> In der Busabfrage führen — der Bus wird für einen Tag als frei oder vergeben angezeigt und kann angefragt werden.</label>
     </div>`).join("") || `<p class="muted">Noch keine Bus-Optionen angelegt.</p>`;
   document.querySelectorAll("#busoptionen-list .pg-regeln").forEach(autoGrowRegeln);
+}
+
+// ---------- Busabfrage: ist an dem Tag noch ein Bus frei? ----------
+//
+// Michel-Wunsch (2026-08-19): ein Datum eingeben und sehen, welche Busse an dem
+// Tag noch frei sind — dazu ein Weg, einen davon für den Tag anzufragen.
+//
+// ⚠️ Die Belegung wird NICHT eigens gespeichert, sondern aus den Spielen der
+// laufenden Saison abgeleitet. Ein zweiter, gepflegter Belegungsstand liefe
+// unweigerlich neben dem Busplan her — und der Busplan ist die Wahrheit.
+// Gerechnet wird mit derselben Statusliste wie die Konflikt-Prüfung
+// (CONFLICT_STATUS_IDS): „Absage" und ein leeres Feld belegen nichts.
+//
+// ⚠️ Die Anfragen liegen in einer eigenen Nextcloud-Datei und laufen über eigene
+// Worker-Aktionen (siehe db.js). Sie stehen deshalb NICHT in `appData` und
+// werden nie über persist() geschrieben.
+
+// [] = es gibt keine, null = gerade nicht abrufbar (alter Worker, Netzfehler).
+// Der Unterschied ist sichtbar: leere Liste sagt „keine Anfragen", null sagt
+// „nicht abrufbar" — sonst sieht ein Fehler wie ein leerer Posteingang aus.
+let busAnfragen = null;
+let abfrageDatum = "";
+let anfrageEntwurf = null;     // { datum, busOptionId, busName }
+let entscheidAnfrageId = null;
+
+function istBusAbfragbar(o) {
+  // Fehlendes Feld gilt als abfragbar: bestehende Bus-Optionen sollen nach dem
+  // Update nicht plötzlich alle aus der Abfrage fallen. Wer einen Eintrag nicht
+  // geführt haben will, nimmt das Häkchen weg. Gleiche Vorgabe im Worker.
+  return !!o && o.abfragbar !== false;
+}
+function abfragbareOptionen() {
+  return getSeason().busOptions.filter(istBusAbfragbar);
+}
+
+// Datum in der Zeitzone des Geräts, nicht per toISOString (das ist UTC und
+// liefert abends den falschen Tag).
+function isoTag(plusTage) {
+  const d = new Date();
+  if (plusTage) d.setDate(d.getDate() + plusTage);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function anfragenListe() { return Array.isArray(busAnfragen) ? busAnfragen : []; }
+
+// Welche Anfragen betreffen genau diesen Bus an genau diesem Tag?
+function anfragenFuer(datum, optionId, status) {
+  return anfragenListe().filter((a) => a.datum === datum && a.busOptionId === optionId
+    && (!status || a.status === status));
+}
+
+// Kern der Abfrage. Liefert je abfragbarer Bus-Option, ob sie an dem Tag frei
+// ist, und wer sie sonst hat.
+//
+// ⚠️ Eine ZUGESAGTE Anfrage belegt mit. Sonst zeigte die Abfrage einen Bus als
+// frei, den die Geschäftsstelle eine Stunde vorher vergeben hat — und die
+// nächste Anfrage ginge auf denselben Tag.
+function busVerfuegbarkeit(datum) {
+  const season = getSeason();
+  return abfragbareOptionen().map((o) => {
+    const belegt = [];
+    season.teams.forEach((t) => {
+      if (!t.busOptionIds.includes(o.id)) return;
+      t.spiele.forEach((sp) => {
+        if (sp.datum !== datum) return;
+        const st = sp.status[o.id] || {};
+        if (!CONFLICT_STATUS_IDS.includes(st.wert)) return;
+        const w = STATUS_WERTE.find((x) => x.id === st.wert);
+        belegt.push({
+          quelle: "spiel", teamId: t.id, teamName: t.name,
+          ort: sp.ort, wertLabel: w ? w.label : st.wert, notiz: st.notiz || ""
+        });
+      });
+    });
+    anfragenFuer(datum, o.id, "zugesagt").forEach((a) => {
+      belegt.push({
+        quelle: "anfrage", teamId: null, teamName: a.teamName,
+        ort: "", wertLabel: "zugesagte Anfrage", notiz: a.zweck || ""
+      });
+    });
+    return { option: o, belegt, offen: anfragenFuer(datum, o.id, "offen") };
+  });
+}
+
+function renderBusabfrage() {
+  const feld = document.getElementById("ba-datum");
+  if (!feld) return;
+  if (feld.value !== abfrageDatum) feld.value = abfrageDatum;
+
+  const ziel = document.getElementById("ba-ergebnis");
+  if (!abfrageDatum) {
+    ziel.innerHTML = `<p class="muted">Trag oben einen Tag ein — dann steht hier, welcher Bus an dem Tag noch frei ist.</p>`;
+    return;
+  }
+  const optionen = abfragbareOptionen();
+  if (!optionen.length) {
+    ziel.innerHTML = `<p class="muted">Für diese Saison ist kein Bus zur Abfrage freigegeben. Das Häkchen „In der Busabfrage führen“ setzt du im Reiter „Bus-Regeln“.</p>`;
+    return;
+  }
+
+  const zeilen = busVerfuegbarkeit(abfrageDatum).map((e) => {
+    const frei = e.belegt.length === 0;
+    const grund = frei
+      ? `<span class="ba-frei-text">frei</span>`
+      : e.belegt.map((b) => `<span class="ba-belegt-text">${escapeHtml(b.teamName || "ohne Mannschaft")}
+          — ${escapeHtml(b.wertLabel)}${b.ort ? " · " + escapeHtml(b.ort) : ""}${b.notiz ? " · " + escapeHtml(b.notiz) : ""}</span>`).join("");
+    const offenHinweis = e.offen.length
+      ? `<div class="ba-offen">⏳ ${e.offen.length === 1 ? "Eine Anfrage" : e.offen.length + " Anfragen"} zu diesem Bus ${e.offen.length === 1 ? "ist" : "sind"} noch offen.</div>`
+      : "";
+    const regeln = e.option.regeln
+      ? `<div class="ba-regeln">ℹ️ ${escapeHtml(e.option.regeln)}</div>`
+      : "";
+    // Anfragen darf jeder, der den Busplan sieht — deshalb bewusst KEIN
+    // editor-only am Knopf (siehe die schmale Worker-Aktion in db.js).
+    const knopf = frei
+      ? `<button type="button" class="btn small" data-anfragen="${escapeHtml(e.option.id)}">Anfragen</button>`
+      : "";
+    return `<div class="ba-zeile ${frei ? "ist-frei" : "ist-belegt"}">
+      <div class="ba-kopf">
+        <span class="ba-icon">${frei ? "✅" : "⛔"}</span>
+        <span class="ba-name">${escapeHtml(e.option.name)}</span>
+        ${knopf}
+      </div>
+      <div class="ba-grund">${grund}</div>
+      ${offenHinweis}
+      ${regeln}
+    </div>`;
+  }).join("");
+
+  ziel.innerHTML = `<div class="ba-tag">${escapeHtml(fmtDatum(abfrageDatum))}</div>${zeilen}`;
+}
+
+function anfrageStatusText(status) {
+  if (status === "zugesagt") return "✅ zugesagt";
+  if (status === "abgelehnt") return "⛔ abgelehnt";
+  return "⏳ offen";
+}
+
+function renderAnfragen() {
+  const ziel = document.getElementById("ba-anfragen");
+  if (!ziel) return;
+  if (busAnfragen === null) {
+    ziel.innerHTML = `<p class="muted">Die Anfragen sind gerade nicht abrufbar.</p>`;
+    return;
+  }
+  if (!busAnfragen.length) {
+    ziel.innerHTML = `<p class="muted">Es liegt keine Anfrage vor.</p>`;
+    return;
+  }
+  const season = getSeason();
+  const eigener = currentUser ? currentUser.username : "";
+  const darfEntscheiden = canEdit();
+  // Offene zuerst, danach nach Fahrtag — die offenen sind das, was jemand tun muss.
+  const sortiert = busAnfragen.slice().sort((a, b) => {
+    if ((a.status === "offen") !== (b.status === "offen")) return a.status === "offen" ? -1 : 1;
+    return String(a.datum).localeCompare(String(b.datum));
+  });
+  ziel.innerHTML = sortiert.map((a) => {
+    // Der aktuelle Name der Bus-Option gewinnt; der mitgespeicherte busName ist
+    // der Rückfall für eine inzwischen gelöschte Option.
+    const opt = season.busOptions.find((o) => o.id === a.busOptionId);
+    const busName = opt ? opt.name : (a.busName || a.busOptionId);
+    const antwort = a.antwort
+      ? `<div class="ar-antwort">Antwort: ${escapeHtml(a.antwort)}${a.entschiedenVon ? " (" + escapeHtml(a.entschiedenVon) + ")" : ""}</div>`
+      : "";
+    const knoepfe = [];
+    if (darfEntscheiden) {
+      knoepfe.push(`<button type="button" class="btn small secondary" data-entscheiden="${escapeHtml(a.id)}">Entscheiden…</button>`);
+      knoepfe.push(`<button type="button" class="btn small danger" data-anfrage-loeschen="${escapeHtml(a.id)}">Entfernen</button>`);
+    } else if (a.status === "offen" && a.ersteller && a.ersteller === eigener) {
+      // Die eigene noch offene Anfrage darf jeder zurücknehmen — eine bereits
+      // entschiedene nicht, sonst ließe sich eine Absage verschwinden lassen.
+      knoepfe.push(`<button type="button" class="btn small secondary" data-anfrage-loeschen="${escapeHtml(a.id)}">Zurücknehmen</button>`);
+    }
+    return `<div class="anfrage-row st-${escapeHtml(a.status)}">
+      <div class="ar-kopf">
+        <span class="ar-status">${anfrageStatusText(a.status)}</span>
+        <strong>${escapeHtml(fmtDatum(a.datum))}</strong>
+        <span class="ar-bus">${escapeHtml(busName)}</span>
+      </div>
+      <div class="ar-body">${escapeHtml(a.teamName)}${a.zweck ? " — " + escapeHtml(a.zweck) : ""}</div>
+      <div class="ar-meta">angefragt von ${escapeHtml(a.erstellerName || a.ersteller || "unbekannt")}</div>
+      ${antwort}
+      ${knoepfe.length ? `<div class="btn-row" style="justify-content:flex-start;">${knoepfe.join("")}</div>` : ""}
+    </div>`;
+  }).join("");
+}
+
+// Karte in der Übersicht. ⚠️ Ohne sie fällt eine offene Anfrage niemandem auf —
+// es gibt bewusst weder Mail noch Push dafür.
+function renderAnfragenKarte() {
+  const karte = document.getElementById("anfragen-card");
+  const liste = document.getElementById("anfragen-card-list");
+  if (!karte || !liste) return;
+  const offen = anfragenListe().filter((a) => a.status === "offen");
+  karte.classList.toggle("hidden", offen.length === 0);
+  if (!offen.length) return;
+  const season = getSeason();
+  liste.innerHTML = offen
+    .slice().sort((a, b) => String(a.datum).localeCompare(String(b.datum)))
+    .map((a) => {
+      const opt = season.busOptions.find((o) => o.id === a.busOptionId);
+      return `<div class="konflikt-row">
+        <span class="lr-strong">${escapeHtml(fmtDatum(a.datum))}</span>
+        <span>${escapeHtml(opt ? opt.name : (a.busName || a.busOptionId))}</span>
+        <span>${escapeHtml(a.teamName)}</span>
+      </div>`;
+    }).join("");
+}
+
+function setAbfrageStatus(text, kind) {
+  const el = document.getElementById("ba-status");
+  if (!el) return;
+  el.textContent = text || "";
+  el.className = "ba-status" + (kind ? " is-" + kind : "");
+}
+
+// ---------- Anfrage stellen ----------
+function openAnfrageModal(optionId) {
+  const opt = getSeason().busOptions.find((o) => o.id === optionId);
+  if (!opt || !abfrageDatum) return;
+  anfrageEntwurf = { datum: abfrageDatum, busOptionId: opt.id, busName: opt.name };
+  document.getElementById("anfrage-modal-context").innerHTML =
+    `<strong>${escapeHtml(opt.name)}</strong> am ${escapeHtml(fmtDatum(abfrageDatum))}`
+    + (opt.regeln ? `<br />ℹ️ ${escapeHtml(opt.regeln)}` : "");
+  document.getElementById("af-team").value = "";
+  document.getElementById("af-zweck").value = "";
+  // Vorschläge: die Mannschaften dieser Saison. Bewusst eine datalist und kein
+  // select — eine Anfrage kann auch für eine Sonderfahrt gestellt werden.
+  document.getElementById("anfrage-mannschaften").innerHTML = getSeason().teams
+    .map((t) => `<option value="${escapeHtml(t.name)}"></option>`).join("");
+  document.getElementById("anfrage-modal").classList.remove("hidden");
+  document.getElementById("af-team").focus();
+}
+function closeAnfrageModal() {
+  anfrageEntwurf = null;
+  document.getElementById("anfrage-modal").classList.add("hidden");
+}
+
+async function saveAnfrage() {
+  if (!anfrageEntwurf) return;
+  const teamName = val("af-team").trim();
+  const zweck = val("af-zweck").trim();
+  if (!teamName) { alert("Bitte die Mannschaft oder den Anlass angeben."); return; }
+  const knopf = document.getElementById("btn-save-anfrage");
+  knopf.disabled = true;
+  try {
+    const antwort = await sendeBusAnfrage({
+      saison: currentSeasonKey(),
+      datum: anfrageEntwurf.datum,
+      busOptionId: anfrageEntwurf.busOptionId,
+      teamName, zweck
+    });
+    busAnfragen = Array.isArray(antwort.anfragen) ? antwort.anfragen : busAnfragen;
+    closeAnfrageModal();
+    renderBusabfrage();
+    renderAnfragen();
+    renderAnfragenKarte();
+    setAbfrageStatus(antwort.doppelt
+      ? "Diese Anfrage lag schon vor."
+      : "Anfrage ist eingegangen.", "ok");
+  } catch (e) {
+    // ⚠️ Nicht still verschlucken: wer eine Anfrage abschickt, verlässt sich
+    // darauf, dass sie angekommen ist.
+    alert("Die Anfrage konnte nicht gespeichert werden: " + e.message);
+  } finally {
+    knopf.disabled = false;
+  }
+}
+
+// ---------- Anfrage entscheiden (Bearbeiter) ----------
+function openEntscheidModal(id) {
+  const a = anfragenListe().find((x) => x.id === id);
+  if (!a || !canEdit()) return;
+  entscheidAnfrageId = id;
+  const opt = getSeason().busOptions.find((o) => o.id === a.busOptionId);
+  document.getElementById("entscheid-modal-context").innerHTML =
+    `<strong>${escapeHtml(opt ? opt.name : (a.busName || a.busOptionId))}</strong>
+     am ${escapeHtml(fmtDatum(a.datum))} — ${escapeHtml(a.teamName)}`;
+  document.getElementById("ef-status").value = a.status;
+  document.getElementById("ef-antwort").value = a.antwort || "";
+  document.getElementById("entscheid-modal").classList.remove("hidden");
+}
+function closeEntscheidModal() {
+  entscheidAnfrageId = null;
+  document.getElementById("entscheid-modal").classList.add("hidden");
+}
+
+async function saveEntscheidung() {
+  if (!entscheidAnfrageId) return;
+  const knopf = document.getElementById("btn-save-entscheid");
+  knopf.disabled = true;
+  try {
+    const antwort = await entscheideBusAnfrage(entscheidAnfrageId, val("ef-status"), val("ef-antwort").trim());
+    busAnfragen = Array.isArray(antwort.anfragen) ? antwort.anfragen : busAnfragen;
+    closeEntscheidModal();
+    renderBusabfrage();
+    renderAnfragen();
+    renderAnfragenKarte();
+    setAbfrageStatus("Entscheidung gespeichert.", "ok");
+  } catch (e) {
+    alert("Die Entscheidung konnte nicht gespeichert werden: " + e.message);
+  } finally {
+    knopf.disabled = false;
+  }
+}
+
+async function anfrageEntfernen(id) {
+  const a = anfragenListe().find((x) => x.id === id);
+  if (!a) return;
+  if (!confirm("Diese Anfrage wirklich entfernen?")) return;
+  try {
+    const antwort = await loescheBusAnfrage(id);
+    busAnfragen = Array.isArray(antwort.anfragen) ? antwort.anfragen : busAnfragen;
+    renderBusabfrage();
+    renderAnfragen();
+    renderAnfragenKarte();
+    setAbfrageStatus("Anfrage entfernt.", "ok");
+  } catch (e) {
+    alert("Die Anfrage konnte nicht entfernt werden: " + e.message);
+  }
+}
+
+async function ladeBusAnfragen() {
+  busAnfragen = await fetchBusAnfragen();
+  renderAnfragen();
+  renderAnfragenKarte();
+  renderBusabfrage();
 }
 
 // ---------- Saison-Verwaltung ----------
@@ -769,6 +1102,9 @@ function renderAll() {
   fillListeTeamFilter();
   renderListe();
   renderBusOptionen();
+  renderBusabfrage();
+  renderAnfragen();
+  renderAnfragenKarte();
   renderMeta();
   renderVersionInfo();
   applyEditVisibility();
@@ -779,10 +1115,11 @@ function switchTab(tab) {
   currentTab = tab;
   document.querySelectorAll("nav button").forEach((b) => b.classList.toggle("active", b.dataset.tab === tab));
   document.querySelectorAll(".tab-section").forEach((s) => s.classList.toggle("active", s.id === "tab-" + tab));
-  if (tab === "uebersicht") { renderSummary(); renderKonflikte(); }
+  if (tab === "uebersicht") { renderSummary(); renderKonflikte(); renderAnfragenKarte(); }
   if (tab === "busplan") { renderTeamSwitch(); renderBusplanGrid(); }
   if (tab === "liste") { fillListeTeamFilter(); renderListe(); }
   if (tab === "busregeln") { renderBusOptionen(); }
+  if (tab === "busabfrage") { renderBusabfrage(); renderAnfragen(); }
   if (tab === "einstellungen") { renderSeasonSelect(); }
   if (tab === "info") { renderMeta(); renderVersionInfo(); }
 }
@@ -916,6 +1253,9 @@ async function startApp() {
   // keine Voraussetzung fuer die Bedienung.
   erinnerungsBericht = await fetchBusErinnerungen();
   renderErinnerungen();
+  // Ebenfalls nachgelagert: die Anfragen liegen in einer eigenen Datei und
+  // kosten einen zweiten Roundtrip -- der erste Aufbau soll darauf nicht warten.
+  await ladeBusAnfragen();
 }
 
 // Fuellt die datalist am Namensfeld. ⚠️ Eine datalist SCHLAEGT nichts vor, was
@@ -1079,8 +1419,15 @@ function setupListeners() {
     persist();
     renderAll();
   });
+  bo.addEventListener("change", (e) => {
+    const aidx = e.target.dataset.abfragbarIdx;
+    if (aidx == null) return;
+    getSeason().busOptions[Number(aidx)].abfragbar = e.target.checked;
+    persist();
+    renderBusabfrage();
+  });
   document.getElementById("btn-add-busoption").addEventListener("click", () => {
-    getSeason().busOptions.push({ id: uuid(), name: "Neue Option", regeln: "" });
+    getSeason().busOptions.push({ id: uuid(), name: "Neue Option", regeln: "", abfragbar: true });
     persist();
     renderBusOptionen();
   });
@@ -1094,9 +1441,56 @@ function setupListeners() {
   document.getElementById("btn-import-seed").addEventListener("click", () => document.getElementById("import-file-input").click());
   document.getElementById("import-file-input").addEventListener("change", (e) => { handleImportFile(e.target.files[0]); e.target.value = ""; });
 
+  // Busabfrage
+  const baDatum = document.getElementById("ba-datum");
+  if (baDatum) baDatum.addEventListener("change", (e) => {
+    abfrageDatum = e.target.value;
+    setAbfrageStatus("");
+    renderBusabfrage();
+  });
+  const baHeute = document.getElementById("btn-ba-heute");
+  if (baHeute) baHeute.addEventListener("click", () => {
+    abfrageDatum = isoTag(0); setAbfrageStatus(""); renderBusabfrage();
+  });
+  const baMorgen = document.getElementById("btn-ba-morgen");
+  if (baMorgen) baMorgen.addEventListener("click", () => {
+    abfrageDatum = isoTag(1); setAbfrageStatus(""); renderBusabfrage();
+  });
+  const baErgebnis = document.getElementById("ba-ergebnis");
+  if (baErgebnis) baErgebnis.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-anfragen]");
+    if (btn) openAnfrageModal(btn.dataset.anfragen);
+  });
+  const baAnfragen = document.getElementById("ba-anfragen");
+  if (baAnfragen) baAnfragen.addEventListener("click", (e) => {
+    const ent = e.target.closest("[data-entscheiden]");
+    if (ent) { openEntscheidModal(ent.dataset.entscheiden); return; }
+    const del = e.target.closest("[data-anfrage-loeschen]");
+    if (del) anfrageEntfernen(del.dataset.anfrageLoeschen);
+  });
+  // Karte in der Uebersicht: Klick fuehrt dorthin, wo man etwas tun kann.
+  const anfKarte = document.getElementById("anfragen-card-list");
+  if (anfKarte) anfKarte.addEventListener("click", () => switchTab("busabfrage"));
+
+  // Anfrage-Modal
+  document.getElementById("anfrage-modal-close").addEventListener("click", closeAnfrageModal);
+  document.getElementById("btn-cancel-anfrage").addEventListener("click", closeAnfrageModal);
+  document.getElementById("btn-save-anfrage").addEventListener("click", saveAnfrage);
+  document.getElementById("anfrage-modal").addEventListener("click", (e) => { if (e.target.id === "anfrage-modal") closeAnfrageModal(); });
+  document.getElementById("anfrage-form").addEventListener("submit", (e) => { e.preventDefault(); saveAnfrage(); });
+
+  // Entscheid-Modal
+  document.getElementById("entscheid-modal-close").addEventListener("click", closeEntscheidModal);
+  document.getElementById("btn-cancel-entscheid").addEventListener("click", closeEntscheidModal);
+  document.getElementById("btn-save-entscheid").addEventListener("click", saveEntscheidung);
+  document.getElementById("entscheid-modal").addEventListener("click", (e) => { if (e.target.id === "entscheid-modal") closeEntscheidModal(); });
+  document.getElementById("entscheid-form").addEventListener("submit", (e) => { e.preventDefault(); saveEntscheidung(); });
+
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
-    if (!document.getElementById("status-modal").classList.contains("hidden")) closeStatusModal();
+    if (!document.getElementById("entscheid-modal").classList.contains("hidden")) closeEntscheidModal();
+    else if (!document.getElementById("anfrage-modal").classList.contains("hidden")) closeAnfrageModal();
+    else if (!document.getElementById("status-modal").classList.contains("hidden")) closeStatusModal();
     else if (!document.getElementById("spiel-modal").classList.contains("hidden")) closeSpielModal();
     else if (!document.getElementById("team-modal").classList.contains("hidden")) closeTeamModal();
   });
