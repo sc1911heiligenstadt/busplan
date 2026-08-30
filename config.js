@@ -43,6 +43,18 @@ const DEFAULT_TEAMS = [
 
 const APP_CHANGELOG = [
   {
+    version: "1.10",
+    groups: [
+      {
+        title: "Beim Sitzungsende wird auch alles neben der Seite geräumt",
+        items: [
+          "Beim Sitzungsende wurde die Seite bereits geleert. Die fünf Dialoge und die Druckansicht stehen aber daneben und blieben mit Namen und Eingaben stehen. Jetzt werden sie mitgeleert.",
+          "Der Hinweis erscheint außerdem an jeder Stelle, an der die Anmeldung wegfällt — vorher nur bei einem Teil der Wege."
+        ]
+      }
+    ]
+  },
+  {
     version: "1.9",
     groups: [
       {
