@@ -158,7 +158,14 @@
       <section class="tab-section" id="tab-info">
         <div class="card">
           <h2>Über den Busplan <span class="version-badge" id="version-badge-2"></span></h2>
-          <p class="muted">Planung der Bus-Transporte zu Auswärtsspielen — welche Mannschaft fährt wann mit welchem Bus.</p>
+          <p class="muted">
+            Planung der Bus-Transporte zu Auswärtsspielen — welche Mannschaft fährt wann mit
+            welchem Bus. Jede Fahrt trägt einen Status von „Unter Vorbereitung“ bis „Zusage“; aus den
+            Zusagen ergibt sich die Belegung, aus doppelten Zusagen der Konflikt-Hinweis auf der
+            Übersicht. Der Reiter „Bus frei?“ beantwortet die Frage vor dem Zusagen und stellt gleich
+            die Anfrage. Was bei welchem Fahrzeug zu beachten ist, steht einmal unter „Bus-Regeln“
+            statt jedes Mal nachgefragt zu werden.
+          </p>
           <div class="form-grid" id="meta-view"></div>
           <p class="muted" id="einstellungen-user" style="margin-top:10px;"></p>
         </div>
@@ -366,7 +373,7 @@
     </div>
   </div>
 
-  <script src="config.js?v=1.13"></script>
+  <script src="config.js?v=1.14"></script>
   <script src="db.js?v=1.6"></script>
   <script src="app.js?v=1.11"></script>
 </body>
