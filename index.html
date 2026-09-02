@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>🚌 Busplan</title>
+<meta name="theme-color" content="#1a56a0" />
+<link rel="stylesheet" href="style.css?v=1.0" />
+</head>
+<body>
+
+  <div class="connect-screen" id="connect-screen">
+    <div class="card">
+      <h2>🚌 Busplan</h2>
+      <p id="connect-message">Bitte über die Tools-Übersicht anmelden, um den Busplan zu sehen.</p>
+      <div class="btn-row">
+        <a class="btn" href="https://sc1911heiligenstadt.github.io/ToolsUebersicht/">Zur Tools-Übersicht</a>
+      </div>
+      <p class="muted" id="cloud-error" style="margin-top:14px;"></p>
+    </div>
+  </div>
+
+  <div id="app-shell" style="display:none;">
+    <header>
+      <h1>🚌 Busplan</h1>
+      <a href="https://sc1911heiligenstadt.github.io/ToolsUebersicht/" class="back-to-dashboard">← Zurück zum Dashboard</a>
+      <div class="header-right">
+        <label class="season-picker">Saison
+          <select id="season-select"></select>
+        </label>
+        <span class="header-status" id="save-status"></span>
+        <span class="header-user" id="header-user"></span>
+        <img class="header-logo" src="https://sc1911heiligenstadt.github.io/logo.svg" alt="1. SC 1911 Heiligenstadt e.V." />
+      </div>
+    </header>
+
+    <nav>
+      <button data-tab="uebersicht" class="active">Übersicht</button>
+      <button data-tab="busplan">Busplan</button>
+      <button data-tab="liste">Liste</button>
+      <button data-tab="busabfrage">Bus frei?</button>
+      <button data-tab="busregeln">Bus-Regeln</button>
+      <div class="nav-right">
+        <button data-tab="einstellungen" class="admin-only hidden">Einstellungen</button>
+        <button data-tab="info">Info</button>
+      </div>
+    </nav>
+
+    <main>
+
+      <!-- ---------- Übersicht ---------- -->
+      <section class="tab-section active" id="tab-uebersicht">
+        <div class="summary-cards" id="summary-cards"></div>
+        <div class="card hidden" id="konflikte-card">
+          <h2>⚠️ Konflikte</h2>
+          <p class="muted" style="margin-bottom:14px;">Diese Bus-Option ist am selben Tag von mehr als einem Spiel eingetragen — bitte klären, wer den Bus tatsächlich bekommt.</p>
+          <div id="konflikte-list"></div>
+        </div>
+        <div class="card hidden" id="anfragen-card">
+          <h2>🚌 Offene Bus-Anfragen</h2>
+          <p class="muted" style="margin-bottom:14px;">Für diese Tage hat jemand einen Bus angefragt und wartet auf eine Antwort. Ein Klick führt zum Reiter „Bus frei?“.</p>
+          <div id="anfragen-card-list"></div>
+        </div>
+        <div class="card">
+          <h2>Nach Mannschaft</h2>
+          <div class="table-scroll">
+            <table class="data-table" id="uebersicht-teams">
+              <thead><tr><th>Mannschaft</th><th>Liga</th><th class="num">Spiele</th><th class="num">Offen / Klärung</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="empty-state hidden" id="uebersicht-empty">Für diese Saison sind noch keine Mannschaften erfasst.</div>
+        </div>
+        <div class="card">
+          <h2>🔔 Bus-Erinnerungen</h2>
+          <p class="muted" style="margin-bottom:14px;">
+            Drei Tage vor einer Fahrt bekommen die Trainer der Mannschaft eine Nachricht aufs Handy
+            und eine E-Mail mit den Regeln des zugesagten Busses. Der Versand läuft jede Nacht
+            automatisch — nur für Spiele, bei denen ein Bus auf <strong>Zusage</strong> steht.
+          </p>
+          <div id="erinnerungen-status" class="muted">Wird geladen…</div>
+        </div>
+        <div class="card">
+          <h2>Export</h2>
+          <p class="muted" style="margin-bottom:14px;">Gesamtübersicht aller Mannschaften, Spiele und Bus-Status zum Ausdrucken oder Speichern als PDF.</p>
+          <div class="btn-row" style="justify-content:flex-start;">
+            <button type="button" class="btn secondary editor-only hidden" id="btn-export-pdf">🖨 Als PDF</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------- Busplan (je Mannschaft) ---------- -->
+      <section class="tab-section" id="tab-busplan">
+        <div class="toolbar">
+          <div class="day-switch" id="team-switch"></div>
+          <div class="toolbar-right">
+            <button class="btn small editor-only hidden" id="btn-new-team">+ Mannschaft</button>
+          </div>
+        </div>
+        <div class="card" id="busplan-team-card">
+          <div id="busplan-team-info"></div>
+          <div class="btn-row editor-only hidden" style="justify-content:flex-start;margin-top:10px;">
+            <button class="btn small secondary" id="btn-edit-team">Mannschaft bearbeiten</button>
+          </div>
+        </div>
+        <div id="busplan-grid-wrap"></div>
+        <div class="empty-state hidden" id="busplan-empty">Für diese Saison ist noch keine Mannschaft ausgewählt — links „+ Mannschaft“ anlegen.</div>
+        <button class="btn editor-only hidden" id="btn-new-spiel" style="margin-top:14px;">+ Spiel hinzufügen</button>
+      </section>
+
+      <!-- ---------- Liste ---------- -->
+      <section class="tab-section" id="tab-liste">
+        <div class="card">
+          <div class="filter-bar">
+            <input type="search" id="liste-search" placeholder="Suche nach Mannschaft / Ort…" />
+            <select id="liste-team"><option value="">Alle Mannschaften</option></select>
+            <span class="filter-count" id="liste-count"></span>
+          </div>
+          <div class="list-row-header">
+            <span>Datum</span><span>Mannschaft</span><span>Ort</span><span>Status</span>
+          </div>
+          <div class="list-rows" id="liste-rows"></div>
+          <div class="empty-state hidden" id="liste-empty">Keine Spiele gefunden.</div>
+        </div>
+      </section>
+
+      <!-- ---------- Busabfrage ---------- -->
+      <section class="tab-section" id="tab-busabfrage">
+        <div class="card">
+          <h2>Ist an dem Tag ein Bus frei?</h2>
+          <p class="muted" style="margin-bottom:14px;">Trag einen Tag ein — dann steht unten, welcher Bus an dem Tag noch frei ist und welcher schon vergeben. Gerechnet wird aus den Spielen der laufenden Saison: Zusage, offen, in Klärung und Unter Vorbereitung belegen einen Bus, eine Absage nicht.</p>
+          <div class="filter-bar">
+            <input type="date" id="ba-datum" />
+            <button type="button" class="btn small secondary" id="btn-ba-heute">Heute</button>
+            <button type="button" class="btn small secondary" id="btn-ba-morgen">Morgen</button>
+          </div>
+          <div id="ba-ergebnis"></div>
+          <div id="ba-status" class="ba-status"></div>
+        </div>
+        <div class="card">
+          <h2>Bus-Anfragen</h2>
+          <p class="muted" style="margin-bottom:14px;">Anfragen darf jeder, der den Busplan sehen kann. Zusagen und Ablehnen dürfen Bearbeiter. Eine zugesagte Anfrage belegt den Bus an dem Tag mit.</p>
+          <div id="ba-anfragen"></div>
+        </div>
+      </section>
+
+      <!-- ---------- Bus-Regeln ---------- -->
+      <section class="tab-section" id="tab-busregeln">
+        <div class="card">
+          <h2>Bus-Regeln</h2>
+          <p class="muted" style="margin-bottom:16px;">Regeln je Bus-Option (z. B. Buchungsfrist, maximale Personenzahl, Abfahrtsort) sowie die Bus-Optionen selbst (Name, Anlegen/Entfernen) — je Saison. Sichtbar für alle, bearbeiten dürfen nur Admin und die Gruppe „Busplan Bearbeiter“.</p>
+          <div id="busoptionen-list"></div>
+          <button class="btn small secondary editor-only hidden" id="btn-add-busoption" style="margin-top:8px;">+ Bus-Option</button>
+        </div>
+      </section>
+
+      <!-- ---------- Info ---------- -->
+      <section class="tab-section" id="tab-info">
+        <div class="card">
+          <h2>Über den Busplan <span class="version-badge" id="version-badge-2"></span></h2>
+          <p class="muted">
+            Planung der Bus-Transporte zu Auswärtsspielen — welche Mannschaft fährt wann mit
+            welchem Bus. Jede Fahrt trägt einen Status von „Unter Vorbereitung“ bis „Zusage“; aus den
+            Zusagen ergibt sich die Belegung, aus doppelten Zusagen der Konflikt-Hinweis auf der
+            Übersicht. Der Reiter „Bus frei?“ beantwortet die Frage vor dem Zusagen und stellt gleich
+            die Anfrage. Was bei welchem Fahrzeug zu beachten ist, steht einmal unter „Bus-Regeln“
+            statt jedes Mal nachgefragt zu werden.
+          </p>
+          <div class="form-grid" id="meta-view"></div>
+          <p class="muted" id="einstellungen-user" style="margin-top:10px;"></p>
+        </div>
+        <div class="card">
+          <h2>Änderungen</h2>
+          <div id="changelog-list"></div>
+        </div>
+      
+      <div class="card" id="ds-info-karte">
+        <h2>Datenschutz</h2>
+        <p>Dieses Werkzeug gehört zu den internen Anwendungen des
+        1. SC 1911 Heiligenstadt. Die hier erfassten Daten werden
+        ausschließlich für die Vereinsarbeit verwendet und liegen auf Servern
+        in Deutschland, die ein Auftragsverarbeiter für den Verein betreibt.
+        Eine Weitergabe an Dritte findet nur statt, soweit sie für den
+        jeweiligen Zweck erforderlich oder gesetzlich vorgeschrieben ist.</p>
+        <p>Verantwortlich ist der 1. SC 1911 Heiligenstadt, Leineberg 2,
+        37308 Heilbad Heiligenstadt, Telefon 03606 612206,
+        <a href="mailto:info@sc1911-heiligenstadt.de">info@sc1911-heiligenstadt.de</a>.
+        Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung,
+        Datenübertragbarkeit und Widerspruch lassen sich unter dieser
+        Anschrift geltend machen. Beschwerden nimmt der Thüringer
+        Landesbeauftragte für den Datenschutz und die Informationsfreiheit
+        entgegen.</p>
+        <p><a href="https://www.sc1911-heiligenstadt.de/datenschutz/" target="_blank" rel="noopener">Datenschutzerklärung des Vereins</a>
+        &middot;
+        <a href="https://www.sc1911-heiligenstadt.de/impressum-2/" target="_blank" rel="noopener">Impressum</a></p>
+      </div>
+</section>
+
+      <!-- ---------- Einstellungen ---------- -->
+      <section class="tab-section" id="tab-einstellungen">
+        <div class="card">
+          <h2>Saison</h2>
+          <div class="form-grid">
+            <div class="form-field"><label>Aktive Saison</label><span id="season-info"></span></div>
+          </div>
+          <div class="btn-row admin-only hidden" style="justify-content:flex-start;margin-top:6px;">
+            <button class="btn small" id="btn-season-new">Neue Saison…</button>
+            <button class="btn small secondary" id="btn-season-duplicate">Aktuelle duplizieren…</button>
+            <button class="btn small danger" id="btn-season-delete">Saison löschen…</button>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Daten-Import</h2>
+          <p class="muted" style="margin-bottom:14px;">Einmaliger Import des bestehenden Excel-Plans (als JSON-Datei) für die aktuelle Saison — ersetzt vorhandene Mannschaften/Spiele nach Rückfrage.</p>
+          <button class="btn success admin-only hidden" id="btn-import-seed">Datendatei auswählen…</button>
+          <input type="file" id="import-file-input" accept="application/json" class="hidden" />
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ---------- Druckbereich (nur für PDF-Export sichtbar) ---------- -->
+  <div id="print-area"><div id="print-content"></div></div>
+
+  <!-- ---------- Bus anfragen ---------- -->
+  <div class="modal-overlay hidden" id="anfrage-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Bus anfragen</h2>
+        <button class="modal-close" id="anfrage-modal-close" aria-label="Schließen">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="muted" id="anfrage-modal-context" style="margin-bottom:14px;"></p>
+        <form id="anfrage-form">
+          <div class="form-field wide">
+            <label>Mannschaft oder Anlass *</label>
+            <input type="text" id="af-team" list="anfrage-mannschaften" placeholder="z. B. D1 — oder Sonderfahrt" autocomplete="off" />
+            <datalist id="anfrage-mannschaften"></datalist>
+          </div>
+          <div class="form-field wide"><label>Wofür wird der Bus gebraucht?</label><input type="text" id="af-zweck" placeholder="optional, z. B. Turnier in Mühlhausen, Abfahrt 8 Uhr" /></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <div></div>
+        <div class="btn-row">
+          <button class="btn secondary" id="btn-cancel-anfrage">Abbrechen</button>
+          <button class="btn success" id="btn-save-anfrage">Anfrage abschicken</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------- Anfrage entscheiden ---------- -->
+  <div class="modal-overlay hidden" id="entscheid-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Anfrage entscheiden</h2>
+        <button class="modal-close" id="entscheid-modal-close" aria-label="Schließen">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="muted" id="entscheid-modal-context" style="margin-bottom:14px;"></p>
+        <form id="entscheid-form">
+          <div class="form-grid">
+            <div class="form-field"><label>Antwort</label>
+              <select id="ef-status">
+                <option value="offen">noch offen</option>
+                <option value="zugesagt">zusagen</option>
+                <option value="abgelehnt">ablehnen</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-field wide"><label>Kurze Nachricht dazu</label><input type="text" id="ef-antwort" placeholder="optional, z. B. Abfahrt 7:30 ab Sportplatz" /></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <div></div>
+        <div class="btn-row">
+          <button class="btn secondary" id="btn-cancel-entscheid">Abbrechen</button>
+          <button class="btn success" id="btn-save-entscheid">Speichern</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------- Mannschaft-Formular ---------- -->
+  <div class="modal-overlay hidden" id="team-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="team-modal-title">Neue Mannschaft</h2>
+        <button class="modal-close" id="team-modal-close" aria-label="Schließen">×</button>
+      </div>
+      <div class="modal-body">
+        <form id="team-form">
+          <div class="form-grid">
+            <!-- datalist: die Mannschaften des Vereins zur Auswahl, aber ein
+                 eigener Name bleibt tippbar. Im Busplan gibt es Fahrten, die zu
+                 keiner Vereinsmannschaft gehören (Sonderfahrt, gemeinsame Fahrt
+                 mit einem Gastverein) — deshalb bewusst kein <select>. -->
+            <div class="form-field">
+              <label>Name *</label>
+              <input type="text" id="tf-name" list="vereins-mannschaften" placeholder="z. B. B1 — oder eigener Name" autocomplete="off" />
+              <datalist id="vereins-mannschaften"></datalist>
+            </div>
+            <div class="form-field"><label>Liga</label><input type="text" id="tf-liga" placeholder="z. B. Verbandsliga" /></div>
+            <div class="form-field wide"><label>Trainer</label><input type="text" id="tf-trainer" placeholder="optional" /></div>
+          </div>
+          <div class="form-field wide">
+            <label>Bus-Optionen für diese Mannschaft</label>
+            <div id="tf-optionen" class="checkbox-list"></div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn danger hidden" id="btn-delete-team">Löschen</button>
+        <div class="btn-row">
+          <button class="btn secondary" id="btn-cancel-team">Abbrechen</button>
+          <button class="btn success" id="btn-save-team">Speichern</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------- Spiel-Formular ---------- -->
+  <div class="modal-overlay hidden" id="spiel-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="spiel-modal-title">Neues Spiel</h2>
+        <button class="modal-close" id="spiel-modal-close" aria-label="Schließen">×</button>
+      </div>
+      <div class="modal-body">
+        <form id="spiel-form">
+          <div class="form-grid">
+            <div class="form-field"><label>Datum *</label><input type="date" id="sf-datum" /></div>
+            <div class="form-field"><label>Ort *</label><input type="text" id="sf-ort" placeholder="z. B. Mühlhausen" /></div>
+          </div>
+          <div class="form-field wide"><label>Notiz</label><input type="text" id="sf-notiz" placeholder="optional" /></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn danger hidden" id="btn-delete-spiel">Löschen</button>
+        <div class="btn-row">
+          <button class="btn secondary" id="btn-cancel-spiel">Abbrechen</button>
+          <button class="btn success" id="btn-save-spiel">Speichern</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------- Status-Formular (eine Zelle im Busplan-Gitter) ---------- -->
+  <div class="modal-overlay hidden" id="status-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Status setzen</h2>
+        <button class="modal-close" id="status-modal-close" aria-label="Schließen">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="muted" id="status-modal-context" style="margin-bottom:14px;"></p>
+        <form id="status-form">
+          <div class="form-grid">
+            <div class="form-field"><label>Status</label><select id="sm-wert"></select></div>
+          </div>
+          <div class="form-field wide"><label>Notiz</label><input type="text" id="sm-notiz" placeholder="z. B. gemeinsame Fahrt mit B-Jugend" /></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <div></div>
+        <div class="btn-row">
+          <button class="btn secondary" id="btn-cancel-status">Abbrechen</button>
+          <button class="btn success" id="btn-save-status">Speichern</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js?v=1.0"></script>
+  <script src="db.js?v=1.0"></script>
+  <script src="app.js?v=1.0"></script>
+</body>
+</html>
