@@ -960,8 +960,9 @@ async function anfrageEntfernen(id) {
   }
 }
 
-async function ladeBusAnfragen() {
-  busAnfragen = await fetchBusAnfragen();
+// vorabP: ein bereits gestarteter busplan-anfragen-load-Aufruf (siehe startApp).
+async function ladeBusAnfragen(vorabP) {
+  busAnfragen = await (vorabP || fetchBusAnfragen());
   renderAnfragen();
   renderAnfragenKarte();
   renderBusabfrage();
@@ -1293,18 +1294,22 @@ async function startApp() {
   renderHeaderUser();
   applyEditVisibility();
   renderBusplanGrid();
-  // Kommt nach: die Liste fuellt nur Auswahlfelder, der Busplan ist ohne sie
-  // schon vollstaendig bedienbar. Ein zweiter Roundtrip soll den ersten Aufbau
-  // nicht aufhalten.
-  vereinsMannschaften = await fetchVereinsMannschaften();
+  // Die drei Nachlader kommen NACH dem ersten Aufbau (der Busplan ist ohne sie
+  // schon bedienbar) -- aber untereinander starten sie seit 2026-08-28
+  // GEMEINSAM. Vorher liefen sie streng nacheinander: Mannschaften, dann
+  // Erinnerungsbericht, dann Anfragen -- drei Roundtrips a ~180 ms, bis die
+  // Anfragen standen, obwohl keiner der drei den anderen braucht. Gezeichnet
+  // wird weiter in der bisherigen Reihenfolge, sobald das jeweilige Ergebnis
+  // da ist. Alle drei fangen ihre Fehler selbst ab (db.js), deshalb hier
+  // keine .catch()-Platzhalter noetig.
+  const mannschaftenP = fetchVereinsMannschaften();
+  const erinnerungenP = fetchBusErinnerungen();
+  const anfragenP = fetchBusAnfragen();
+  vereinsMannschaften = await mannschaftenP;
   renderVereinsListe();
-  // Ebenfalls nachgelagert und aus demselben Grund: der Bericht ist Nachlese,
-  // keine Voraussetzung fuer die Bedienung.
-  erinnerungsBericht = await fetchBusErinnerungen();
+  erinnerungsBericht = await erinnerungenP;
   renderErinnerungen();
-  // Ebenfalls nachgelagert: die Anfragen liegen in einer eigenen Datei und
-  // kosten einen zweiten Roundtrip -- der erste Aufbau soll darauf nicht warten.
-  await ladeBusAnfragen();
+  await ladeBusAnfragen(anfragenP);
 }
 
 // Fuellt die datalist am Namensfeld. ⚠️ Eine datalist SCHLAEGT nichts vor, was

@@ -43,6 +43,17 @@ const DEFAULT_TEAMS = [
 
 const APP_CHANGELOG = [
   {
+    version: "1.1",
+    groups: [
+      {
+        title: "Anfragen und Erinnerungen stehen schneller",
+        items: [
+          "Nach dem ersten Aufbau wurden Mannschaftsliste, Erinnerungsbericht und Bus-Anfragen bisher streng nacheinander geholt — drei Roundtrips, bis die Anfragen zu sehen waren. Jetzt laufen die drei gemeinsam los. Der Busplan selbst war davon nie betroffen, er stand schon vorher sofort."
+        ]
+      }
+    ]
+  },
+  {
     version: "1.0",
     groups: [
       {
