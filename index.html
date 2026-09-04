@@ -234,11 +234,11 @@
         <p class="muted" id="anfrage-modal-context" style="margin-bottom:14px;"></p>
         <form id="anfrage-form">
           <div class="form-field wide">
-            <label>Mannschaft oder Anlass *</label>
+            <label for="af-team">Mannschaft oder Anlass *</label>
             <input type="text" id="af-team" list="anfrage-mannschaften" placeholder="z. B. D1 — oder Sonderfahrt" autocomplete="off" />
             <datalist id="anfrage-mannschaften"></datalist>
           </div>
-          <div class="form-field wide"><label>Wofür wird der Bus gebraucht?</label><input type="text" id="af-zweck" placeholder="optional, z. B. Turnier in Mühlhausen, Abfahrt 8 Uhr" /></div>
+          <div class="form-field wide"><label for="af-zweck">Wofür wird der Bus gebraucht?</label><input type="text" id="af-zweck" placeholder="optional, z. B. Turnier in Mühlhausen, Abfahrt 8 Uhr" /></div>
         </form>
       </div>
       <div class="modal-footer">
@@ -262,7 +262,7 @@
         <p class="muted" id="entscheid-modal-context" style="margin-bottom:14px;"></p>
         <form id="entscheid-form">
           <div class="form-grid">
-            <div class="form-field"><label>Antwort</label>
+            <div class="form-field"><label for="ef-status">Antwort</label>
               <select id="ef-status">
                 <option value="offen">noch offen</option>
                 <option value="zugesagt">zusagen</option>
@@ -270,7 +270,7 @@
               </select>
             </div>
           </div>
-          <div class="form-field wide"><label>Kurze Nachricht dazu</label><input type="text" id="ef-antwort" placeholder="optional, z. B. Abfahrt 7:30 ab Sportplatz" /></div>
+          <div class="form-field wide"><label for="ef-antwort">Kurze Nachricht dazu</label><input type="text" id="ef-antwort" placeholder="optional, z. B. Abfahrt 7:30 ab Sportplatz" /></div>
         </form>
       </div>
       <div class="modal-footer">
@@ -298,12 +298,12 @@
                  keiner Vereinsmannschaft gehören (Sonderfahrt, gemeinsame Fahrt
                  mit einem Gastverein) — deshalb bewusst kein <select>. -->
             <div class="form-field">
-              <label>Name *</label>
+              <label for="tf-name">Name *</label>
               <input type="text" id="tf-name" list="vereins-mannschaften" placeholder="z. B. B1 — oder eigener Name" autocomplete="off" />
               <datalist id="vereins-mannschaften"></datalist>
             </div>
-            <div class="form-field"><label>Liga</label><input type="text" id="tf-liga" placeholder="z. B. Verbandsliga" /></div>
-            <div class="form-field wide"><label>Trainer</label><input type="text" id="tf-trainer" placeholder="optional" /></div>
+            <div class="form-field"><label for="tf-liga">Liga</label><input type="text" id="tf-liga" placeholder="z. B. Verbandsliga" /></div>
+            <div class="form-field wide"><label for="tf-trainer">Trainer</label><input type="text" id="tf-trainer" placeholder="optional" /></div>
           </div>
           <div class="form-field wide">
             <label>Bus-Optionen für diese Mannschaft</label>
@@ -331,10 +331,10 @@
       <div class="modal-body">
         <form id="spiel-form">
           <div class="form-grid">
-            <div class="form-field"><label>Datum *</label><input type="date" id="sf-datum" /></div>
-            <div class="form-field"><label>Ort *</label><input type="text" id="sf-ort" placeholder="z. B. Mühlhausen" /></div>
+            <div class="form-field"><label for="sf-datum">Datum *</label><input type="date" id="sf-datum" /></div>
+            <div class="form-field"><label for="sf-ort">Ort *</label><input type="text" id="sf-ort" placeholder="z. B. Mühlhausen" /></div>
           </div>
-          <div class="form-field wide"><label>Notiz</label><input type="text" id="sf-notiz" placeholder="optional" /></div>
+          <div class="form-field wide"><label for="sf-notiz">Notiz</label><input type="text" id="sf-notiz" placeholder="optional" /></div>
         </form>
       </div>
       <div class="modal-footer">
@@ -358,9 +358,9 @@
         <p class="muted" id="status-modal-context" style="margin-bottom:14px;"></p>
         <form id="status-form">
           <div class="form-grid">
-            <div class="form-field"><label>Status</label><select id="sm-wert"></select></div>
+            <div class="form-field"><label for="sm-wert">Status</label><select id="sm-wert"></select></div>
           </div>
-          <div class="form-field wide"><label>Notiz</label><input type="text" id="sm-notiz" placeholder="z. B. gemeinsame Fahrt mit B-Jugend" /></div>
+          <div class="form-field wide"><label for="sm-notiz">Notiz</label><input type="text" id="sm-notiz" placeholder="z. B. gemeinsame Fahrt mit B-Jugend" /></div>
         </form>
       </div>
       <div class="modal-footer">
