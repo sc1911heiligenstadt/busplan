@@ -36,7 +36,17 @@ async function gatewayRequest(payload) {
     body: JSON.stringify(payload)
   });
   if (resp.status === 401) { if (typeof raeumeBeiSitzungsverlust === "function") raeumeBeiSitzungsverlust(); throw new NotLoggedInError("Sitzung abgelaufen"); }
-  if (resp.status === 403) throw new Error("Kein Zugriff auf dieses Tool.");
+  if (resp.status === 403) {
+    // Den Grund des Servers durchreichen statt pauschal "Kein Zugriff auf dieses
+    // Tool": der Worker unterscheidet fehlenden Tool-Zugriff von fehlendem
+    // Bearbeiten-Recht ("Kein Bearbeiten-Recht für dieses Tool"), und genau
+    // diese Unterscheidung braucht man, um eine Fehlermeldung aus dem echten
+    // Betrieb ueberhaupt einordnen zu koennen. Vorher las jeder denselben, oft
+    // falschen Satz -- auch dann, wenn das Tool offen vor ihm stand.
+    let detail = "";
+    try { const b = await resp.json(); if (b && b.error) detail = String(b.error); } catch (_) {}
+    throw new Error(detail || "Kein Zugriff auf dieses Tool.");
+  }
   if (resp.status === 409) throw new ConflictError();
   if (!resp.ok) {
     let detail = "";

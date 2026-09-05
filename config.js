@@ -43,6 +43,17 @@ const DEFAULT_TEAMS = [
 
 const APP_CHANGELOG = [
   {
+    version: "1.3",
+    groups: [
+      {
+        title: "Fehlermeldung sagt jetzt, was wirklich fehlt",
+        items: [
+          "Wies der Server einen Zugriff ab, stand hier immer derselbe Satz: „Kein Zugriff auf dieses Tool.“ Dabei gibt es zwei ganz verschiedene Gründe — das Tool ist gar nicht freigegeben, oder es fehlt nur das Bearbeiten-Recht. Jetzt steht der Grund des Servers da. Nennt er keinen, bleibt es beim alten Satz."
+        ]
+      }
+    ]
+  },
+  {
     version: "1.2",
     groups: [
       {
