@@ -211,17 +211,27 @@ function renderErinnerungen() {
   if (lauf.fehler) {
     teile.push(`<div class="warn-line">⚠️ Fehler beim letzten Lauf: ${escapeHtml(String(lauf.fehler))}</div>`);
   }
+  // ⚠️ Eine Warnzeile bleibt seit dem 05.09.2026 stehen, bis ein Lauf mit
+  // echten Fahrten sie ausräumt — vorher wischte sie die erste ruhige Nacht
+  // weg, und die Karte war sauber, obwohl niemand eine Nachricht bekommen hat.
+  // Deshalb muss dabeistehen, WANN sie entstanden ist: sonst liest sie sich wie
+  // die Meldung von heute Nacht. Ein älterer Worker liefert das Feld nicht —
+  // dann steht wie bisher nichts dabei.
+  const warnWann = lauf.warnungenAm
+    ? ` <span class="muted">(vom ${escapeHtml(new Date(lauf.warnungenAm).toLocaleString("de-DE"))})</span>`
+    : "";
   const ohneTrainer = Array.isArray(lauf.ohneTrainer) ? lauf.ohneTrainer : [];
   if (ohneTrainer.length) {
     teile.push(`<div class="warn-line">⚠️ Kein Trainerkonto zugeordnet, deshalb ohne Erinnerung:
-      <strong>${escapeHtml(ohneTrainer.join(", "))}</strong>.
+      <strong>${escapeHtml(ohneTrainer.join(", "))}</strong>${warnWann}.
       Die Zuordnung läuft über das Profil des Trainers in der Toolübersicht (Feld Mannschaften),
-      nicht über das Trainer-Feld hier im Busplan.</div>`);
+      nicht über das Trainer-Feld hier im Busplan.
+      Die Fahrt bekommt ihre Erinnerung nach, sobald die Zuordnung steht.</div>`);
   }
   const ohneAdresse = Array.isArray(lauf.ohneAdresse) ? lauf.ohneAdresse : [];
   if (ohneAdresse.length) {
     teile.push(`<div class="warn-line">⚠️ Handy-Nachricht ging raus, E-Mail nicht — beim Trainer
-      fehlt eine Adresse in den Trainerdaten: <strong>${escapeHtml(ohneAdresse.join(", "))}</strong>.</div>`);
+      fehlt eine Adresse in den Trainerdaten: <strong>${escapeHtml(ohneAdresse.join(", "))}</strong>${warnWann}.</div>`);
   }
   el.innerHTML = teile.join("");
 }

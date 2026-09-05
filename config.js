@@ -43,6 +43,19 @@ const DEFAULT_TEAMS = [
 
 const APP_CHANGELOG = [
   {
+    version: "1.4",
+    groups: [
+      {
+        title: "Eine Fahrt ohne zugeordnetes Trainerkonto verliert ihre Erinnerung nicht mehr",
+        items: [
+          "Steht zu einer Mannschaft kein Trainerkonto, konnte der nächtliche Lauf niemanden erreichen — hakte die Fahrt aber trotzdem als „erledigt“ ab. Sie war damit endgültig verbraucht: wer die Zuordnung danach nachtrug, bekam trotzdem nie eine Nachricht. Jetzt bleibt so eine Fahrt offen und wird nachgeholt, sobald die Zuordnung steht.",
+          "Die Warnzeile hier in der Karte überlebt jetzt eine ruhige Nacht. Vorher wischte sie der erste Lauf ohne anstehende Fahrt weg — die Karte war am nächsten Morgen sauber, obwohl niemand eine Nachricht bekommen hatte.",
+          "Damit eine stehengebliebene Warnung nicht wie die von heute Nacht aussieht, steht jetzt ihr Datum dabei."
+        ]
+      }
+    ]
+  },
+  {
     version: "1.3",
     groups: [
       {
