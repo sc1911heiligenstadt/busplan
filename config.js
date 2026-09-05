@@ -43,6 +43,17 @@ const DEFAULT_TEAMS = [
 
 const APP_CHANGELOG = [
   {
+    version: "1.2",
+    groups: [
+      {
+        title: "Saison umschalten geht jetzt auch ohne Bearbeiten-Recht",
+        items: [
+          "Wer den Busplan nur ansehen darf, bekam beim Wechsel der Saison im Kopf der Seite die Meldung „Speichern fehlgeschlagen: Kein Zugriff auf dieses Tool.“ — obwohl der Busplan vor ihm auf dem Bildschirm stand. Grund: die gewählte Saison wurde immer mitgespeichert, und Speichern ist Bearbeitern vorbehalten. Ab jetzt bleibt die Wahl bei einem Nur-Seher einfach lokal. Danach hing außerdem bei jedem Verlassen der Seite die Frage „Seite verlassen?“, weil der Fehler nie wieder wegging. Auch das ist erledigt."
+        ]
+      }
+    ]
+  },
+  {
     version: "1.1",
     groups: [
       {

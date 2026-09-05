@@ -977,11 +977,20 @@ function renderSeasonSelect() {
   const info = document.getElementById("season-info");
   if (info) info.textContent = `${currentSeasonKey()} — ${getSeason().teams.length} Mannschaften`;
 }
+// Die gewaehlte Saison steht in appData.meta und wird deshalb mitgespeichert.
+// "busplan" steht in WRITE_REQUIRES_EDIT_PERMISSION -- fuer einen Nur-Seher
+// beantwortet der Worker jedes dav-save mit 403. Das Auswahlfeld im Kopf traegt
+// aber kein Gate (und soll auch keins tragen: hineinschauen darf jeder). Ohne
+// die Abfrage unten lief also jeder Saisonwechsel eines Nur-Sehers in ein
+// "Speichern fehlgeschlagen", und danach hing die Rueckfrage beim Verlassen der
+// Seite dauerhaft, weil letzterSaveFehlgeschlagen nie wieder zurueckgesetzt
+// wird. Fuer den Nur-Seher bleibt die Wahl jetzt rein lokal -- genau richtig,
+// er hat nichts zu hinterlassen.
 function switchSeason(key) {
   if (!appData.seasons[key]) return;
   appData.meta.currentSeason = key;
   currentTeamId = null;
-  persist();
+  if (canEdit()) persist();
   renderAll();
 }
 function newSeason() {
