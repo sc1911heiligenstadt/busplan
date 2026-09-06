@@ -113,7 +113,7 @@
         <div class="card">
           <div class="filter-bar">
             <input type="search" id="liste-search" placeholder="Suche nach Mannschaft / Ort…" />
-            <select id="liste-team"><option value="">Alle Mannschaften</option></select>
+            <select id="liste-team" aria-label="Nach Mannschaft filtern"><option value="">Alle Mannschaften</option></select>
             <span class="filter-count" id="liste-count"></span>
           </div>
           <div class="list-row-header">
@@ -130,7 +130,7 @@
           <h2>Ist an dem Tag ein Bus frei?</h2>
           <p class="muted" style="margin-bottom:14px;">Trag einen Tag ein — dann steht unten, welcher Bus an dem Tag noch frei ist und welcher schon vergeben. Gerechnet wird aus den Spielen der laufenden Saison: Zusage, offen, in Klärung und Unter Vorbereitung belegen einen Bus, eine Absage nicht.</p>
           <div class="filter-bar">
-            <input type="date" id="ba-datum" />
+            <input type="date" id="ba-datum" aria-label="Tag der Busanfrage" />
             <button type="button" class="btn small secondary" id="btn-ba-heute">Heute</button>
             <button type="button" class="btn small secondary" id="btn-ba-morgen">Morgen</button>
           </div>
@@ -213,7 +213,7 @@
           <h2>Daten-Import</h2>
           <p class="muted" style="margin-bottom:14px;">Einmaliger Import des bestehenden Excel-Plans (als JSON-Datei) für die aktuelle Saison — ersetzt vorhandene Mannschaften/Spiele nach Rückfrage.</p>
           <button class="btn success admin-only hidden" id="btn-import-seed">Datendatei auswählen…</button>
-          <input type="file" id="import-file-input" accept="application/json" class="hidden" />
+          <input type="file" id="import-file-input" aria-label="Datendatei auswählen" accept="application/json" class="hidden" />
         </div>
       </section>
 
