@@ -415,3 +415,7 @@ nav .nav-right { margin-left: auto; display: flex; flex-wrap: wrap; gap: inherit
    steht in keinem Scroll-Container (anders als die Tabelle daneben).
    Betrifft die Anfragen-Karte und die gleich gebaute Konflikte-Karte. */
 .konflikt-row > span { min-width: 0; overflow-wrap: anywhere; }
+
+/* Karte "Funktionen" im Info-Reiter -- gleiche Optik wie frueher die
+   Aenderungsliste, nur ohne Versionsueberschriften. */
+#funktionen-list { display: flex; flex-direction: column; gap: 18px; font-size: 13px; }

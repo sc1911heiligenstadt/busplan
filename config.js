@@ -41,7 +41,112 @@ const DEFAULT_TEAMS = [
   { id: "d2-jugend", name: "D2-Jugend", liga: "Verbandsliga", busOptionIds: ["stadtbus", "laerz-weiss", "villa-lampe", "sch-bus-hig", "sch-bus-eic", "eltern"] }
 ];
 
+// Was der Busplan kann -- steht im Info-Reiter als Karte "Funktionen".
+// WICHTIG: Das ist NICHT der Changelog. Hier steht der ZUSTAND ("die Reiter
+// lassen sich anordnen"), dort die Aenderung ("die Reiter lassen sich JETZT
+// anordnen"). Wer eine Funktion umbaut oder abschaltet, zieht diesen Text mit --
+// und ebenso E:\SC1911-Tools-Anleitung.txt, wo dasselbe ausfuehrlich steht.
+const APP_FUNKTIONEN = [
+  {
+    title: "Wofür der Busplan da ist",
+    items: [
+      "Planung der Bus- und Transportfahrten zu den Auswärtsspielen der Nachwuchsmannschaften — an Stelle der bisherigen Excel-Tabelle.",
+      "Je Mannschaft steht ein eigener Reiter mit den Auswärtsspielen der Saison und dem Stand jeder Transport-Möglichkeit: Stadtbus, Busunternehmen, vereinseigene Busse, Eltern, Leihwagen.",
+      "Die Mannschafts-Reiter lassen sich per Ziehen anordnen. Die Reihenfolge gilt danach überall — in der Übersicht, in der Liste und im PDF. Am Handy geht das Ziehen nicht."
+    ]
+  },
+  {
+    title: "Status je Fahrt",
+    items: [
+      "Zu jedem Spiel und jeder Bus-Option lässt sich ein Status setzen: Zusage, Absage, offen, in Klärung oder Unter Vorbereitung — jeweils mit einer freiwilligen Notiz, etwa für eine gemeinsame Fahrt mit einer anderen Mannschaft.",
+      "Aus den Zusagen ergibt sich die Belegung, aus doppelten Zusagen der Konflikt-Hinweis."
+    ]
+  },
+  {
+    title: "Konflikte",
+    items: [
+      "Nutzen zwei Mannschaften dieselbe Bus-Option am selben Tag, markiert die App das als Konflikt — mit Warnsymbol am Status und gesammelt in einer eigenen Karte in der Übersicht.",
+      "Beim Setzen eines Status auf einen schon belegten Tag kommt zusätzlich eine Rückfrage. Speichern bleibt möglich, etwa wenn zwei Mannschaften bewusst zusammen fahren."
+    ]
+  },
+  {
+    title: "Ist an dem Tag noch ein Bus frei?",
+    items: [
+      "Der Reiter „Bus frei?“ beantwortet die Frage vor dem Zusagen: Datum eintragen, und für jeden Bus steht da, ob er an dem Tag frei oder vergeben ist — samt der Mannschaft, die ihn hat, und dem Grund. Eine Absage oder ein leeres Feld belegt nichts.",
+      "Die Knöpfe „Heute“ und „Morgen“ springen mit einem Griff auf den passenden Tag. Hinterlegte Bus-Regeln stehen gleich dabei — die Buchungsfrist sieht man also, bevor man anfragt.",
+      "Nur Busse mit dem Häkchen „In der Busabfrage führen“ tauchen in der Abfrage auf. Gedacht ist das für echte einzelne Fahrzeuge; „Eltern / Privatfahrer“ etwa kann an einem Tag nicht belegt sein.",
+      "Bei jedem freien Bus steht ein Knopf „Anfragen“: Mannschaft oder Anlass eintragen, kurz sagen wofür — fertig. Anfragen darf jeder, der den Busplan sehen kann.",
+      "Alle Anfragen stehen als Liste im selben Reiter. Bearbeiter sagen dort zu oder ab und können eine kurze Antwort dazuschreiben. Eine zugesagte Anfrage belegt den Bus sofort mit. Die eigene Anfrage lässt sich zurücknehmen, solange niemand entschieden hat."
+    ]
+  },
+  {
+    title: "Bus-Regeln",
+    items: [
+      "Zu jeder Bus-Option lässt sich im Reiter „Bus-Regeln“ ein Freitext hinterlegen — Buchungsfrist, Personenzahl, Abfahrtsort und was sonst zu beachten ist. So steht es einmal da, statt jedes Mal nachgefragt zu werden.",
+      "Die Regeln kann jeder angemeldete Nutzer lesen; ändern dürfen sie Bearbeiter.",
+      "Ist eine Regel hinterlegt, erscheint ein Hinweiszeichen an der zugehörigen Spalte im Busplan; der Text steht als Tooltip dahinter."
+    ]
+  },
+  {
+    title: "Erinnerung an die zugesagte Fahrt",
+    items: [
+      "Drei Tage bevor eine Mannschaft ihren Bus hat, bekommen ihre Trainer automatisch eine Nachricht aufs Handy und eine E-Mail. Ausgelöst wird das nur von einer Zusage — bei offen, in Klärung oder Unter Vorbereitung passiert nichts.",
+      "In der E-Mail stehen Tag, Ort und der zugesagte Bus, dazu dessen Bus-Regeln. Sind für ein Spiel zwei Busse zugesagt, nennt eine einzige Nachricht beide.",
+      "Kommt eine Zusage erst kurz vorher, geht die Erinnerung in der Nacht danach raus. Doppelt kommt sie nie.",
+      "Wer die Nachrichten aufs Handy nicht will, schaltet sie in der Tools-Übersicht unter „Mein Konto“ ab. Die E-Mail bleibt davon unberührt.",
+      "Die Karte „Bus-Erinnerungen“ in der Übersicht zeigt, wann der Versand zuletzt lief, wie viele Nachrichten rausgingen und für welche Mannschaft niemand erreichbar war."
+    ]
+  },
+  {
+    title: "Liste und Ausdruck",
+    items: [
+      "Der Reiter „Liste“ zeigt dieselben Fahrten quer über alle Mannschaften als flache Liste — mit Suchfeld nach Mannschaft oder Ort und einem Filter auf eine einzelne Mannschaft.",
+      "Der Knopf „Als PDF“ druckt den Stand der laufenden Saison: Kennzahlen, die Konfliktliste und je Mannschaft eine Tabelle mit allen Spielen und dem Status jeder Bus-Option.",
+      "Die Status-Farben vom Bildschirm bleiben im Ausdruck erhalten."
+    ]
+  },
+  {
+    title: "Saisons, Mannschaften und Bus-Optionen",
+    items: [
+      "Mehrere Saisons sind planbar: anlegen, duplizieren, löschen. Mannschaften und Bus-Optionen sind je Saison frei konfigurierbar, weil sich das Angebot halbjährlich ändert.",
+      "Beim Anlegen einer Mannschaft schlägt das Namensfeld die echten Mannschaften des Vereins vor — die Liste aus der Tools-Übersicht. Wird eine ausgewählt, kommt die Liga gleich mit. Aufgelöste Mannschaften werden nicht vorgeschlagen.",
+      "Ein eigener Name lässt sich weiterhin tippen — für Sonderfahrten oder eine gemeinsame Fahrt mit einem Gastverein."
+    ]
+  },
+  {
+    title: "Wer darf was",
+    items: [
+      "Sehen: den kompletten Plan einschließlich Liste, Belegung und Bus-Regeln, schreibgeschützt. Einen Bus anfragen darf diese Stufe ausdrücklich auch.",
+      "Bearbeiten: Mannschaften, Spiele und Bus-Optionen anlegen, ändern und löschen, Status setzen, Regeln pflegen, über Anfragen entscheiden. Dazu der PDF-Export.",
+      "Administrieren: zusätzlich Saisonverwaltung und Daten-Import im Reiter „Einstellungen“.",
+      "Der Reiter „Info“ steht jedem angemeldeten Nutzer offen."
+    ]
+  },
+  {
+    title: "Daten, Speicherung und Bedienung am Handy",
+    items: [
+      "Gespeichert wird in der Vereins-Nextcloud über die zentrale Anmeldung der Tools-Übersicht — ein eigenes Passwort braucht es nicht.",
+      "Ändern zwei Geräte gleichzeitig denselben Stand, erkennt die App das, lädt den fremden Stand nach und sagt Bescheid.",
+      "Läuft die Anmeldung ab, während die App offen ist, wird der Bildschirm geräumt — samt aller Dialoge und der Druckansicht. Es bleibt nichts stehen, in das sich jemand am selben Rechner hineinlesen könnte.",
+      "Die Ansicht ist für das Handy gebaut und funktioniert dort vollständig."
+    ]
+  }
+];
+
 const APP_CHANGELOG = [
+  {
+    version: "1.5",
+    groups: [
+      {
+        title: "Im Info-Reiter steht jetzt, was die App kann",
+        items: [
+          "Die Liste der Änderungen und die Versionsnummer sind aus dem Info-Reiter verschwunden.",
+          "Stattdessen steht dort die Karte „Funktionen“: was die App kann, nach Themen geordnet.",
+          "Was sich geändert hat, steht weiterhin in den Neuigkeiten auf der Startseite der Tools-Übersicht."
+        ]
+      }
+    ]
+  },
   {
     version: "1.4",
     groups: [

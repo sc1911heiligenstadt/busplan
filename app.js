@@ -1070,8 +1070,27 @@ function renderMeta() {
   document.getElementById("meta-view").innerHTML = rows.map(([k, v]) =>
     `<div class="form-field"><label>${escapeHtml(k)}</label><span>${escapeHtml(v)}</span></div>`).join("");
 }
+// Was der Busplan kann -- die Karte "Funktionen" im Info-Reiter. Nutzt dieselben
+// CSS-Klassen wie frueher die Aenderungsliste (.changelog-group, .cg-title,
+// .cg-items), damit beide Karten gleich aussehen.
+function renderFunktionen() {
+  const container = document.getElementById("funktionen-list");
+  if (!container) return;
+  container.innerHTML = APP_FUNKTIONEN.map((g) => `
+    <div class="changelog-group">
+      <div class="cg-title">${escapeHtml(g.title)}</div>
+      <ul class="cg-items">${g.items.map((i) => `<li>${escapeHtml(i)}</li>`).join("")}</ul>
+    </div>
+  `).join("");
+}
+
+// Die Aenderungsliste und die Versionspille stehen seit 07.09.2026 NICHT mehr im
+// Info-Reiter: dort sollen nur die Funktionen der App stehen. APP_CHANGELOG
+// bleibt in config.js gepflegt und wird weiter geschrieben -- es ist die Quelle
+// fuer die Anleitung und fuer die Neuigkeiten-Meldungen. Diese Funktion steigt
+// darum still aus, wenn es das Ziel nicht gibt, statt beim Seitenstart mit einem
+// Fehler abzubrechen.
 function renderVersionInfo() {
-  document.querySelectorAll("#version-badge, #version-badge-2").forEach((el) => { if (el) el.textContent = "v" + APP_VERSION; });
   const list = document.getElementById("changelog-list");
   if (!list) return;
   list.innerHTML = APP_CHANGELOG.map((entry) => `
@@ -1128,6 +1147,7 @@ function renderAll() {
   renderAnfragenKarte();
   renderMeta();
   renderVersionInfo();
+  renderFunktionen();
   applyEditVisibility();
 }
 
@@ -1142,7 +1162,7 @@ function switchTab(tab) {
   if (tab === "busregeln") { renderBusOptionen(); }
   if (tab === "busabfrage") { renderBusabfrage(); renderAnfragen(); }
   if (tab === "einstellungen") { renderSeasonSelect(); }
-  if (tab === "info") { renderMeta(); renderVersionInfo(); }
+  if (tab === "info") { renderMeta(); renderVersionInfo(); renderFunktionen(); }
 }
 
 // ---------- Gateway: Laden / Speichern / Konflikte ----------
